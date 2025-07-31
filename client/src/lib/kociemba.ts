@@ -111,10 +111,27 @@ function isInG1(state: CubeState): boolean {
   const cornersOriented = state.cornerOrientations.every(o => o === 0);
   
   // 3. E-slice edges must be in the E-slice (positions 4-7 in the standard numbering)
-  const eSliceEdges = [4, 5, 6, 7];
-  const eSliceCorrect = eSliceEdges.every(pos => {
+  const eSliceIndices = [4, 5, 6, 7];
+  const eSliceCorrect = eSliceIndices.every(pos => {
     return state.edgePositions[pos] >= 4 && state.edgePositions[pos] <= 7;
   });
+  
+  // Log detailed information for debugging
+  if (!edgesOriented) {
+    console.log('[G1 Check] Edges not oriented correctly:', 
+      state.edgeOrientations.map((o, i) => `E${i}:${o}`).join(', '));
+  }
+  
+  if (!cornersOriented) {
+    console.log('[G1 Check] Corners not oriented correctly:', 
+      state.cornerOrientations.map((o, i) => `C${i}:${o}`).join(', '));
+  }
+  
+  if (!eSliceCorrect) {
+    const eSliceEdges = eSliceIndices.map(pos => state.edgePositions[pos]);
+    console.log('[G1 Check] E-slice edges not in correct position:', 
+      eSliceEdges.map((p, i) => `E${eSliceIndices[i]}=>${p}`).join(', '));
+  }
   
   console.log(`[G1 Check] Edges: ${edgesOriented}, Corners: ${cornersOriented}, E-Slice: ${eSliceCorrect}`);
   

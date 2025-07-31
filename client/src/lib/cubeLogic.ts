@@ -1,73 +1,76 @@
-import { CubeState, cloneCubeState } from './cubeState';
+import { CubeState } from './cubeState';
 import { MOVE_DEFINITIONS } from './moves';
 
 // Execute a move on the cube state
 export function executeMove(state: CubeState, move: string): CubeState {
-  const newState = cloneCubeState(state);
+  // Create a deep clone of the state to avoid mutating the original
+  const newState: CubeState = {
+    cornerPositions: [...state.cornerPositions],
+    cornerOrientations: [...state.cornerOrientations],
+    edgePositions: [...state.edgePositions],
+    edgeOrientations: [...state.edgeOrientations]
+  };
+
   const moveData = MOVE_DEFINITIONS[move];
   
   if (!moveData) {
     console.error(`Unknown move: ${move}`);
     return state;
   }
-  
-  // Apply corner permutation
-  if (moveData.cornerCycle.length > 0) {
-    const temp = newState.cornerPositions[moveData.cornerCycle[0]];
-    for (let i = 0; i < moveData.cornerCycle.length - 1; i++) {
-      newState.cornerPositions[moveData.cornerCycle[i]] = 
-        newState.cornerPositions[moveData.cornerCycle[i + 1]];
-    }
-    newState.cornerPositions[moveData.cornerCycle[moveData.cornerCycle.length - 1]] = temp;
-  }
-  
-  // Apply corner orientation changes
-  if (moveData.cornerOrientationChange.length > 0) {
-    // First, apply the corner permutation to the orientation array
-    const tempOrientation = newState.cornerOrientations[moveData.cornerCycle[0]];
-    for (let i = 0; i < moveData.cornerCycle.length - 1; i++) {
-      newState.cornerOrientations[moveData.cornerCycle[i]] = 
-        newState.cornerOrientations[moveData.cornerCycle[i + 1]];
-    }
-    newState.cornerOrientations[moveData.cornerCycle[moveData.cornerCycle.length - 1]] = tempOrientation;
+
+  // Apply corner moves
+  if (moveData.cornerCycle && moveData.cornerCycle.length > 0) {
+    // Save the first corner's state
+    const firstCornerPos = newState.cornerPositions[moveData.cornerCycle[0]];
+    const firstCornerOri = newState.cornerOrientations[firstCornerPos];
     
-    // Then apply the orientation changes
+    // Apply the cycle to positions
     for (let i = 0; i < moveData.cornerCycle.length; i++) {
-      const index = moveData.cornerCycle[i];
-      const change = moveData.cornerOrientationChange[i];
-      if (change === 1) {
-        // Clockwise orientation change
-        newState.cornerOrientations[index] = (newState.cornerOrientations[index] + 1) % 3;
-      } else if (change === 2) {
-        // Counter-clockwise orientation change
-        newState.cornerOrientations[index] = (newState.cornerOrientations[index] + 2) % 3;
+      const current = moveData.cornerCycle[i];
+      const next = moveData.cornerCycle[(i + 1) % moveData.cornerCycle.length];
+      
+      if (i === moveData.cornerCycle.length - 1) {
+        // For the last in cycle, use the first one we saved
+        newState.cornerPositions[current] = firstCornerPos;
+      } else {
+        newState.cornerPositions[current] = newState.cornerPositions[next];
       }
     }
+    
+    // Apply orientation changes
+    for (let i = 0; i < moveData.cornerCycle.length; i++) {
+      const current = moveData.cornerCycle[i];
+      const orientationChange = moveData.cornerOrientationChange[i] || 0;
+      const piece = newState.cornerPositions[current];
+      newState.cornerOrientations[piece] = (newState.cornerOrientations[piece] + orientationChange) % 3;
+    }
   }
   
-  // Apply edge permutation
-  if (moveData.edgeCycle.length > 0) {
-    const tempPosition = newState.edgePositions[moveData.edgeCycle[0]];
-    const tempOrientation = newState.edgeOrientations[moveData.edgeCycle[0]];
+  // Apply edge moves
+  if (moveData.edgeCycle && moveData.edgeCycle.length > 0) {
+    // Save the first edge's state
+    const firstEdgePos = newState.edgePositions[moveData.edgeCycle[0]];
+    const firstEdgeOri = newState.edgeOrientations[firstEdgePos];
     
-    for (let i = 0; i < moveData.edgeCycle.length - 1; i++) {
-      newState.edgePositions[moveData.edgeCycle[i]] = 
-        newState.edgePositions[moveData.edgeCycle[i + 1]];
-      newState.edgeOrientations[moveData.edgeCycle[i]] = 
-        newState.edgeOrientations[moveData.edgeCycle[i + 1]];
+    // Apply the cycle to positions
+    for (let i = 0; i < moveData.edgeCycle.length; i++) {
+      const current = moveData.edgeCycle[i];
+      const next = moveData.edgeCycle[(i + 1) % moveData.edgeCycle.length];
+      
+      if (i === moveData.edgeCycle.length - 1) {
+        // For the last in cycle, use the first one we saved
+        newState.edgePositions[current] = firstEdgePos;
+      } else {
+        newState.edgePositions[current] = newState.edgePositions[next];
+      }
     }
     
-    newState.edgePositions[moveData.edgeCycle[moveData.edgeCycle.length - 1]] = tempPosition;
-    newState.edgeOrientations[moveData.edgeCycle[moveData.edgeCycle.length - 1]] = tempOrientation;
-  }
-  
-  // Apply edge orientation changes
-  for (let i = 0; i < moveData.edgeOrientationChange.length; i++) {
-    const index = moveData.edgeCycle[i];
-    const change = moveData.edgeOrientationChange[i];
-    if (change === 1) {
-      // Flip the edge
-      newState.edgeOrientations[index] = (newState.edgeOrientations[index] + 1) % 2;
+    // Apply orientation changes
+    for (let i = 0; i < moveData.edgeCycle.length; i++) {
+      const current = moveData.edgeCycle[i];
+      const orientationChange = moveData.edgeOrientationChange[i] || 0;
+      const piece = newState.edgePositions[current];
+      newState.edgeOrientations[piece] = (newState.edgeOrientations[piece] + orientationChange) % 2;
     }
   }
   

@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { subscribeWithSelector } from 'zustand/middleware';
-import { CubeState, createSolvedCube } from '../cubeState';
+import { CubeState, createSolvedCube, isSolved } from '../cubeState';
 import { executeMove as performMove, scramble, isValidMove } from '../cubeLogic';
 import { solveCube as solveWithKociemba } from '../kociemba';
 import { CubieState, createVisualCube, applyVisualMove } from '../cubeVisual';
@@ -121,7 +121,13 @@ export const useCube = create<CubeStore>()(
       const state = get();
       if (state.isAnimating || state.isSolving) return;
 
-      console.log('Starting cube solve...');
+      console.log('=== STARTING CUBE SOLVE ===');
+      console.log('Initial cube state:', {
+        corners: state.cubeState.cornerPositions.join(','),
+        cornerOr: state.cubeState.cornerOrientations.join(','),
+        edges: state.cubeState.edgePositions.join(','),
+        edgeOr: state.cubeState.edgeOrientations.join(',')
+      });
       
       // Set initial solving state
       set({
@@ -139,9 +145,18 @@ export const useCube = create<CubeStore>()(
         // Get the current cube state
         const cubeState = get().cubeState;
         
+        // Log the state being sent to the solver
+        console.log('Sending to Kociemba solver:', {
+          corners: cubeState.cornerPositions.join(','),
+          cornerOr: cubeState.cornerOrientations.join(','),
+          edges: cubeState.edgePositions.join(','),
+          edgeOr: cubeState.edgeOrientations.join(',')
+        });
+        
         // Solve the cube using the Kociemba solver
         console.log('Starting Kociemba solver...');
         const solution = await solveWithKociemba(cubeState);
+        console.log('Solver returned solution:', solution);
         
         if (!solution || solution.length === 0) {
           console.log('No solution found or cube is already solved');
@@ -163,7 +178,42 @@ export const useCube = create<CubeStore>()(
         const executeNextMove = async (index: number) => {
           if (index >= solution.length) {
             // All moves completed
-            console.log('All solution moves completed');
+            console.log('=== ALL SOLUTION MOVES COMPLETED ===');
+            
+            // Log final cube state
+            const finalState = get().cubeState;
+            console.log('Final cube state:', {
+              corners: finalState.cornerPositions.join(','),
+              cornerOr: finalState.cornerOrientations.join(','),
+              edges: finalState.edgePositions.join(','),
+              edgeOr: finalState.edgeOrientations.join(',')
+            });
+            
+            // Check if the cube is actually solved
+            const solved = isSolved(finalState);
+            console.log('Is cube solved?', solved);
+            
+            if (!solved) {
+              console.error('Cube is not solved after applying all moves!');
+              // Try to find which pieces are incorrect
+              const expectedCorners = [0,1,2,3,4,5,6,7];
+              const expectedEdges = [0,1,2,3,4,5,6,7,8,9,10,11];
+              
+              console.log('Incorrect corners (position, expected, actual):');
+              for (let i = 0; i < 8; i++) {
+                if (finalState.cornerPositions[i] !== i) {
+                  console.log(`Corner ${i}: expected ${i}, got ${finalState.cornerPositions[i]}`);
+                }
+              }
+              
+              console.log('Incorrect edges (position, expected, actual):');
+              for (let i = 0; i < 12; i++) {
+                if (finalState.edgePositions[i] !== i) {
+                  console.log(`Edge ${i}: expected ${i}, got ${finalState.edgePositions[i]}`);
+                }
+              }
+            }
+            
             set({
               isSolving: false,
               isPhase1: false,
@@ -175,7 +225,19 @@ export const useCube = create<CubeStore>()(
           }
           
           const move = solution[index];
-          console.log(`Executing move ${index + 1}/${solution.length}:`, move);
+          const moveNum = index + 1;
+          const totalMoves = solution.length;
+          
+          console.log(`\n--- Executing move ${moveNum}/${totalMoves}: ${move} ---`);
+          
+          // Log state before move
+          const stateBefore = get().cubeState;
+          console.log('State before move:', {
+            cornerPositions: [...stateBefore.cornerPositions],
+            cornerOrientations: [...stateBefore.cornerOrientations],
+            edgePositions: [...stateBefore.edgePositions],
+            edgeOrientations: [...stateBefore.edgeOrientations]
+          });
           
           // Update the current move for animation
           set({
@@ -185,7 +247,15 @@ export const useCube = create<CubeStore>()(
           });
           
           // Apply the move to the logical state
-          const newCubeState = performMove(get().cubeState, move);
+          const newCubeState = performMove({...stateBefore}, move);
+          
+          // Log state after move
+          console.log('State after move:', {
+            cornerPositions: [...newCubeState.cornerPositions],
+            cornerOrientations: [...newCubeState.cornerOrientations],
+            edgePositions: [...newCubeState.edgePositions],
+            edgeOrientations: [...newCubeState.edgeOrientations]
+          });
           
           // Update visual cube state
           const newVisualCube = applyVisualMove([...get().visualCube], move);

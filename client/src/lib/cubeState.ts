@@ -31,14 +31,15 @@ export function cloneCubeState(state: CubeState): CubeState {
 
 // Check if cube is solved
 export function isSolved(state: CubeState): boolean {
-  const solved = createSolvedCube();
+  // Check if all corners are in their home positions and oriented correctly
+  const cornersSolved = state.cornerPositions.every((pos, i) => pos === i) &&
+                      state.cornerOrientations.every(ori => ori === 0);
   
-  return (
-    state.cornerPositions.every((pos, i) => pos === solved.cornerPositions[i]) &&
-    state.cornerOrientations.every((ori, i) => ori === solved.cornerOrientations[i]) &&
-    state.edgePositions.every((pos, i) => pos === solved.edgePositions[i]) &&
-    state.edgeOrientations.every((ori, i) => ori === solved.edgeOrientations[i])
-  );
+  // Check if all edges are in their home positions and oriented correctly
+  const edgesSolved = state.edgePositions.every((pos, i) => pos === i) &&
+                     state.edgeOrientations.every(ori => ori === 0);
+  
+  return cornersSolved && edgesSolved;
 }
 
 // Convert state to string for algorithm input
