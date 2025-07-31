@@ -140,17 +140,17 @@ function rotateU(cubies: CubieState[], direction: number): CubieState[] {
       // U clockwise: position (x,z) -> (-z,x)
       // This means: front->right, right->back, back->left, left->front
       const temp = newFaceColors.front;
-      newFaceColors.front = newFaceColors.left;
-      newFaceColors.left = newFaceColors.back;
-      newFaceColors.back = newFaceColors.right;
-      newFaceColors.right = temp;
-    } else {
-      // U counter-clockwise: opposite direction
-      const temp = newFaceColors.front;
       newFaceColors.front = newFaceColors.right;
       newFaceColors.right = newFaceColors.back;
       newFaceColors.back = newFaceColors.left;
       newFaceColors.left = temp;
+    } else {
+      // U counter-clockwise: opposite direction
+      const temp = newFaceColors.front;
+      newFaceColors.front = newFaceColors.left;
+      newFaceColors.left = newFaceColors.back;
+      newFaceColors.back = newFaceColors.right;
+      newFaceColors.right = temp;
     }
     
     return {
@@ -178,7 +178,7 @@ function rotateD(cubies: CubieState[], direction: number): CubieState[] {
   const rotatedLowerCubies = lowerFaceCubies.map(cubie => {
     const [x, y, z] = cubie.position;
     
-    // Rotate position around Y axis (opposite direction from U for clockwise)
+    // Rotate position around Y axis (same direction as U but for bottom face)
     const newX = direction === 1 ? z : -z;
     const newZ = direction === 1 ? -x : x;
     
@@ -189,17 +189,17 @@ function rotateD(cubies: CubieState[], direction: number): CubieState[] {
       // D clockwise: position (x,z) -> (z,-x) 
       // This means: front->left, left->back, back->right, right->front
       const temp = newFaceColors.front;
-      newFaceColors.front = newFaceColors.right;
-      newFaceColors.right = newFaceColors.back;
-      newFaceColors.back = newFaceColors.left;
-      newFaceColors.left = temp;
-    } else {
-      // D counter-clockwise: opposite direction
-      const temp = newFaceColors.front;
       newFaceColors.front = newFaceColors.left;
       newFaceColors.left = newFaceColors.back;
       newFaceColors.back = newFaceColors.right;
       newFaceColors.right = temp;
+    } else {
+      // D counter-clockwise: opposite direction
+      const temp = newFaceColors.front;
+      newFaceColors.front = newFaceColors.right;
+      newFaceColors.right = newFaceColors.back;
+      newFaceColors.back = newFaceColors.left;
+      newFaceColors.left = temp;
     }
     
     return {
