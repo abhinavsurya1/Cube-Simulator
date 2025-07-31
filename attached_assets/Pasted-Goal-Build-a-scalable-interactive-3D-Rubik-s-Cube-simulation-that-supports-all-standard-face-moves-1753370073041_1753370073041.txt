@@ -1,0 +1,60 @@
+Goal: Build a scalable, interactive 3D Rubik’s Cube simulation that supports all standard face moves (U, U', R, R', F, F', L, L', D, D', B, B') and integrates with a backend solver using Kociemba’s Two-Phase Algorithm — one of the most efficient and widely used cube-solving algorithms.
+📦 Requirements
+✅ 1. 3D Visualization
+
+A 3×3 Rubik’s Cube rendered in 3D using Three.js, Unity, or PyGame.
+Each face is color-coded:
+U (white), D (yellow), F (green), B (blue), L (red), R (orange)
+Animate face turns for all 12 standard moves:
+U, U', R, R', F, F', L, L', D, D', B, B'
+✅ 2. Logical Model + Solver Integration
+
+Maintain an internal cube state (cubie or facelet model).
+Each move updates both:
+The 3D visual layer
+The cube’s internal data structure
+Integrate or connect to a backend solver using:
+Kociemba’s Two-Phase Algorithm
+(Optionally implemented in Python or C++)
+Supports fast, optimal solves in ~20 moves
+From any scrambled state, the backend will provide a move sequence (e.g., ["U'", "R", "F", "U2"]), which must:
+Be visualized one-by-one in 3D
+Match the actual logical cube state
+✅ 3. User Interaction
+
+UI Buttons or keyboard shortcuts to trigger each move manually
+Allow user to input a scramble sequence
+“Solve” button to fetch and animate solution from solver
+Optional: Cube drag-to-rotate (orbit controls)
+✅ 4. Scalability
+
+Cube engine design should support:
+2×2 (corner-only logic)
+4×4 (edge pairing + parity detection)
+Move definitions and render logic should be abstracted for NxNxN support
+✅ 5. Technology Stack (Preferred)
+
+3D: Three.js (JavaScript/WebGL)
+OR Unity 3D (C#)
+OR Python + PyOpenGL / PyGame
+Solver: Python implementation of Kociemba's algorithm (or call to Cube Explorer executable / C++ backend)
+🧠 Solver-Specific Details
+The core solving logic will be based on:
+🔄 Kociemba’s Two-Phase Algorithm
+Phase 1: Reduce to subgroup G1
+Phase 2: Solve G1 to identity using only half-turns
+Input: scrambled state
+Output: optimal or near-optimal sequence of moves (18-move set)
+Use existing libraries if needed:
+
+kociemba (Python binding)
+Or use Kociemba’s C++ source (publicly available)
+🎯 Deliverables
+A functional 3D Rubik’s Cube visualizer with:
+Realistic animations
+Accurate internal state sync
+Full move set support: U, U', R, R', F, F', L, L', D, D', B, B'
+Backend solver integration using Kociemba’s algorithm
+Button/keyboard control
+Solve animation based on computed solution
+Modular code for scaling to 2×2, 4×4 cubes
