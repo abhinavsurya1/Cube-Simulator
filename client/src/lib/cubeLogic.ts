@@ -1,4 +1,4 @@
-import { CubeState } from './cubeState';
+import { CubeState, createSolvedCube } from './cubeState';
 import { MOVE_DEFINITIONS } from './moves';
 
 // Execute a move on the cube state
@@ -37,10 +37,11 @@ export function executeMove(state: CubeState, move: string): CubeState {
       }
     }
     
-    // Apply orientation changes
+    // Apply orientation changes to the pieces that moved
     for (let i = 0; i < moveData.cornerCycle.length; i++) {
       const current = moveData.cornerCycle[i];
       const orientationChange = moveData.cornerOrientationChange[i] || 0;
+      // Get the piece that is now at position 'current'
       const piece = newState.cornerPositions[current];
       newState.cornerOrientations[piece] = (newState.cornerOrientations[piece] + orientationChange) % 3;
     }
@@ -65,10 +66,11 @@ export function executeMove(state: CubeState, move: string): CubeState {
       }
     }
     
-    // Apply orientation changes
+    // Apply orientation changes to the pieces that moved
     for (let i = 0; i < moveData.edgeCycle.length; i++) {
       const current = moveData.edgeCycle[i];
       const orientationChange = moveData.edgeOrientationChange[i] || 0;
+      // Get the piece that is now at position 'current'
       const piece = newState.edgePositions[current];
       newState.edgeOrientations[piece] = (newState.edgeOrientations[piece] + orientationChange) % 2;
     }
@@ -109,4 +111,139 @@ export function applyMoveSequence(state: CubeState, moves: string[]): CubeState 
     currentState = executeMove(currentState, move);
   }
   return currentState;
+}
+
+// Test function to verify move execution is working correctly
+export function testMoveExecution(): boolean {
+  console.log('Testing move execution...');
+  
+  // Start with solved cube
+  let state = createSolvedCube();
+  
+  // Apply a sequence that should return to solved state
+  const testSequence = ["R", "U", "R'", "U'"]; // This should return to solved state after 4 moves
+  const fullSequence = [...testSequence, ...testSequence, ...testSequence, ...testSequence]; // 16 moves total
+  
+  console.log('Initial state:', state);
+  
+  for (let i = 0; i < fullSequence.length; i++) {
+    const move = fullSequence[i];
+    state = executeMove(state, move);
+    console.log(`After move ${i + 1} (${move}):`, state);
+  }
+  
+  const isSolved = state.cornerPositions.every((pos, i) => pos === i) &&
+                   state.cornerOrientations.every(ori => ori === 0) &&
+                   state.edgePositions.every((pos, i) => pos === i) &&
+                   state.edgeOrientations.every(ori => ori === 0);
+  
+  console.log('Final state is solved:', isSolved);
+  return isSolved;
+}
+
+// Comprehensive test function to verify move execution
+export function comprehensiveMoveTest(): boolean {
+  console.log('=== COMPREHENSIVE MOVE TEST ===');
+  
+  // Test 1: R U R' U' (should return to solved after 4 moves)
+  console.log('\nTest 1: R U R\' U\' sequence');
+  let state = createSolvedCube();
+  const test1 = ["R", "U", "R'", "U'"];
+  for (const move of test1) {
+    state = executeMove(state, move);
+  }
+  const test1Result = state.cornerPositions.every((pos, i) => pos === i) &&
+                   state.cornerOrientations.every(ori => ori === 0) &&
+                   state.edgePositions.every((pos, i) => pos === i) &&
+                   state.edgeOrientations.every(ori => ori === 0);
+  console.log('Test 1 result:', test1Result);
+  
+  // Test 2: R U R' U' repeated 4 times (should definitely be solved)
+  console.log('\nTest 2: R U R\' U\' repeated 4 times');
+  state = createSolvedCube();
+  const test2 = [...test1, ...test1, ...test1, ...test1];
+  for (const move of test2) {
+    state = executeMove(state, move);
+  }
+  const test2Result = state.cornerPositions.every((pos, i) => pos === i) &&
+                   state.cornerOrientations.every(ori => ori === 0) &&
+                   state.edgePositions.every((pos, i) => pos === i) &&
+                   state.edgeOrientations.every(ori => ori === 0);
+  console.log('Test 2 result:', test2Result);
+  
+  // Test 3: F R U R' U' F' (Sledgehammer - should return to solved)
+  console.log('\nTest 3: F R U R\' U\' F\' (Sledgehammer)');
+  state = createSolvedCube();
+  const test3 = ["F", "R", "U", "R'", "U'", "F'"];
+  for (const move of test3) {
+    state = executeMove(state, move);
+  }
+  const test3Result = state.cornerPositions.every((pos, i) => pos === i) &&
+                   state.cornerOrientations.every(ori => ori === 0) &&
+                   state.edgePositions.every((pos, i) => pos === i) &&
+                   state.edgeOrientations.every(ori => ori === 0);
+  console.log('Test 3 result:', test3Result);
+  
+  // Test 4: R U R' U' F' U' F (Right trigger - should return to solved)
+  console.log('\nTest 4: R U R\' U\' F\' U\' F (Right trigger)');
+  state = createSolvedCube();
+  const test4 = ["R", "U", "R'", "U'", "F'", "U'", "F"];
+  for (const move of test4) {
+    state = executeMove(state, move);
+  }
+  const test4Result = state.cornerPositions.every((pos, i) => pos === i) &&
+                   state.cornerOrientations.every(ori => ori === 0) &&
+                   state.edgePositions.every((pos, i) => pos === i) &&
+                   state.edgeOrientations.every(ori => ori === 0);
+  console.log('Test 4 result:', test4Result);
+  
+  const allTestsPassed = test1Result && test2Result && test3Result && test4Result;
+  console.log('\nAll tests passed:', allTestsPassed);
+  
+  return allTestsPassed;
+}
+
+// Debug function to show state after each move
+export function debugMoveSequence(initialState: CubeState, moves: string[]): void {
+  console.log('=== DEBUGGING MOVE SEQUENCE ===');
+  console.log('Initial state:', {
+    corners: initialState.cornerPositions.join(','),
+    cornerOr: initialState.cornerOrientations.join(','),
+    edges: initialState.edgePositions.join(','),
+    edgeOr: initialState.edgeOrientations.join(',')
+  });
+  
+  let state = { ...initialState };
+  
+  for (let i = 0; i < moves.length; i++) {
+    const move = moves[i];
+    state = executeMove(state, move);
+    
+    console.log(`After move ${i + 1} (${move}):`, {
+      corners: state.cornerPositions.join(','),
+      cornerOr: state.cornerOrientations.join(','),
+      edges: state.edgePositions.join(','),
+      edgeOr: state.edgeOrientations.join(',')
+    });
+  }
+  
+  const solved = state.cornerPositions.every((pos, i) => pos === i) &&
+                 state.cornerOrientations.every(ori => ori === 0) &&
+                 state.edgePositions.every((pos, i) => pos === i) &&
+                 state.edgeOrientations.every(ori => ori === 0);
+  console.log('Final state is solved:', solved);
+  
+  if (!solved) {
+    console.log('Incorrect pieces:');
+    for (let i = 0; i < 8; i++) {
+      if (state.cornerPositions[i] !== i) {
+        console.log(`Corner ${i}: expected ${i}, got ${state.cornerPositions[i]}`);
+      }
+    }
+    for (let i = 0; i < 12; i++) {
+      if (state.edgePositions[i] !== i) {
+        console.log(`Edge ${i}: expected ${i}, got ${state.edgePositions[i]}`);
+      }
+    }
+  }
 }

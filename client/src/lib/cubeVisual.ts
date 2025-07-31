@@ -1,3 +1,5 @@
+import { CubeState } from './cubeState';
+
 // Visual representation of the Rubik's Cube
 // This handles the 3D position and color state of each cubie
 
@@ -400,4 +402,88 @@ function rotateB(cubies: CubieState[], direction: number): CubieState[] {
   });
   
   return [...otherCubies, ...rotatedBackCubies];
+}
+
+// Convert logical cube state to visual cube state
+export function logicalToVisualCube(logicalState: CubeState): CubieState[] {
+  // Start with a solved visual cube
+  const visualCube = createVisualCube();
+  
+  // Apply the logical state changes to the visual cube
+  // This is a simplified approach - in a full implementation, you'd need to map
+  // the logical piece positions to the visual cubie positions
+  
+  // For now, we'll create a mapping based on the standard cube numbering
+  // Corner pieces: 0-7, Edge pieces: 0-11
+  const cornerPositions = [
+    [1, 1, 1],   // 0: top-front-right
+    [-1, 1, 1],  // 1: top-front-left
+    [-1, 1, -1], // 2: top-back-left
+    [1, 1, -1],  // 3: top-back-right
+    [1, -1, 1],  // 4: bottom-front-right
+    [-1, -1, 1], // 5: bottom-front-left
+    [-1, -1, -1],// 6: bottom-back-left
+    [1, -1, -1]  // 7: bottom-back-right
+  ];
+  
+  const edgePositions = [
+    [0, 1, 1],   // 0: top-front
+    [1, 1, 0],   // 1: top-right
+    [0, 1, -1],  // 2: top-back
+    [-1, 1, 0],  // 3: top-left
+    [0, -1, 1],  // 4: bottom-front
+    [1, -1, 0],  // 5: bottom-right
+    [0, -1, -1], // 6: bottom-back
+    [-1, -1, 0], // 7: bottom-left
+    [-1, 0, 1],  // 8: front-left
+    [1, 0, 1],   // 9: front-right
+    [1, 0, -1],  // 10: back-right
+    [-1, 0, -1]  // 11: back-left
+  ];
+  
+  // Create a new visual cube based on the logical state
+  const newVisualCube: CubieState[] = [];
+  
+  // Add corner pieces
+  for (let i = 0; i < 8; i++) {
+    const logicalPos = logicalState.cornerPositions[i];
+    const visualPos = cornerPositions[logicalPos];
+    const orientation = logicalState.cornerOrientations[i];
+    
+    // Find the cubie at this position
+    const cubie = visualCube.find(c => 
+      c.position[0] === visualPos[0] && 
+      c.position[1] === visualPos[1] && 
+      c.position[2] === visualPos[2]
+    );
+    
+    if (cubie) {
+      // Apply orientation changes (simplified)
+      const newCubie = { ...cubie };
+      // Note: In a full implementation, you'd need to rotate the face colors based on orientation
+      newVisualCube.push(newCubie);
+    }
+  }
+  
+  // Add edge pieces
+  for (let i = 0; i < 12; i++) {
+    const logicalPos = logicalState.edgePositions[i];
+    const visualPos = edgePositions[logicalPos];
+    const orientation = logicalState.edgeOrientations[i];
+    
+    // Find the cubie at this position
+    const cubie = visualCube.find(c => 
+      c.position[0] === visualPos[0] && 
+      c.position[1] === visualPos[1] && 
+      c.position[2] === visualPos[2]
+    );
+    
+    if (cubie) {
+      const newCubie = { ...cubie };
+      // Note: In a full implementation, you'd need to flip the edge colors based on orientation
+      newVisualCube.push(newCubie);
+    }
+  }
+  
+  return newVisualCube;
 }

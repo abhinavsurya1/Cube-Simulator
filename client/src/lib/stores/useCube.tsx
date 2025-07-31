@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { subscribeWithSelector } from 'zustand/middleware';
 import { CubeState, createSolvedCube, isSolved } from '../cubeState';
-import { executeMove as performMove, scramble, isValidMove } from '../cubeLogic';
+import { executeMove as performMove, scramble, isValidMove, comprehensiveMoveTest, debugMoveSequence } from '../cubeLogic';
 import { solveCube as solveWithKociemba } from '../kociemba';
 import { CubieState, createVisualCube, applyVisualMove } from '../cubeVisual';
 
@@ -36,6 +36,7 @@ interface CubeStore {
   resetCube: () => void;
   pauseSolving: () => void;
   resumeSolving: () => void;
+  testMoveExecution: () => boolean;
   
   // Internal actions
   _applyMove: (move: string) => void;
@@ -110,8 +111,9 @@ export const useCube = create<CubeStore>()(
         isSolved: false,
         isPhase1: false,
         isPhase2: false,
-        isTimerRunning: false,
-        timerStartTime: null
+        // Keep timer running during scramble
+        isTimerRunning: state.isTimerRunning,
+        timerStartTime: state.timerStartTime
       });
       
       console.log(`Scrambled with moves: ${scrambleMoves.join(' ')}`);
@@ -122,6 +124,17 @@ export const useCube = create<CubeStore>()(
       if (state.isAnimating || state.isSolving) return;
 
       console.log('=== STARTING CUBE SOLVE ===');
+      
+      // Run comprehensive move test first
+      console.log('Running comprehensive move test...');
+      const moveTestPassed = comprehensiveMoveTest();
+      console.log('Move test passed:', moveTestPassed);
+      
+      // Also test the store's move execution
+      console.log('Testing store move execution...');
+      const storeTestPassed = get().testMoveExecution();
+      console.log('Store test passed:', storeTestPassed);
+      
       console.log('Initial cube state:', {
         corners: state.cubeState.cornerPositions.join(','),
         cornerOr: state.cubeState.cornerOrientations.join(','),
@@ -129,7 +142,7 @@ export const useCube = create<CubeStore>()(
         edgeOr: state.cubeState.edgeOrientations.join(',')
       });
       
-      // Set initial solving state
+      // Set initial solving state and start timer if not running
       set({
         isSolving: true,
         isPaused: false,
@@ -138,7 +151,10 @@ export const useCube = create<CubeStore>()(
         isSolved: false,
         solutionMoves: [],
         currentMoveIndex: 0,
-        moves: []
+        moves: [],
+        // Start timer if not already running
+        isTimerRunning: true,
+        timerStartTime: state.timerStartTime || Date.now()
       });
 
       try {
@@ -157,6 +173,12 @@ export const useCube = create<CubeStore>()(
         console.log('Starting Kociemba solver...');
         const solution = await solveWithKociemba(cubeState);
         console.log('Solver returned solution:', solution);
+        
+        // Debug the solution if it exists
+        if (solution && solution.length > 0) {
+          console.log('Debugging the solution...');
+          debugMoveSequence(cubeState, solution);
+        }
         
         if (!solution || solution.length === 0) {
           console.log('No solution found or cube is already solved');
@@ -212,14 +234,41 @@ export const useCube = create<CubeStore>()(
                   console.log(`Edge ${i}: expected ${i}, got ${finalState.edgePositions[i]}`);
                 }
               }
+              
+              // Try to apply the solution moves manually to verify
+              console.log('=== VERIFYING SOLUTION MANUALLY ===');
+              let testState = get().cubeState;
+              for (let i = 0; i < solution.length; i++) {
+                const move = solution[i];
+                testState = performMove(testState, move);
+                console.log(`After move ${i + 1} (${move}):`, {
+                  corners: testState.cornerPositions.join(','),
+                  edges: testState.edgePositions.join(',')
+                });
+              }
+              const testSolved = isSolved(testState);
+              console.log('Manual verification result:', testSolved);
+            }
+            
+            // Verify the final state is actually solved
+            console.log('=== VERIFYING FINAL SOLUTION ===');
+            const finalSolved = isSolved(finalState);
+            console.log('Final logical state is solved:', finalSolved);
+            
+            if (finalSolved) {
+              console.log('Cube successfully solved!');
+            } else {
+              console.error('Cube is not solved after applying all moves!');
             }
             
             set({
               isSolving: false,
               isPhase1: false,
               isPhase2: false,
-              isSolved: true,
-              solutionMoves: []
+              isSolved: finalSolved,
+              solutionMoves: [],
+              // Keep timer running after solving
+              isTimerRunning: true
             });
             return;
           }
@@ -336,6 +385,8 @@ export const useCube = create<CubeStore>()(
       }
     },
     
+
+    
     // Internal actions
     _applyMove: (move: string) => {
       const state = get();
@@ -393,6 +444,38 @@ export const useCube = create<CubeStore>()(
         };
         requestAnimationFrame(animate);
       }
+    },
+    
+    // Test function to verify move execution
+    testMoveExecution: () => {
+      console.log('=== TESTING MOVE EXECUTION ===');
+      
+      // Start with solved cube
+      let state = createSolvedCube();
+      let visualState = createVisualCube();
+      
+      // Apply a sequence that should return to solved state
+      const testSequence = ["R", "U", "R'", "U'"];
+      const fullSequence = [...testSequence, ...testSequence, ...testSequence, ...testSequence]; // 16 moves total
+      
+      console.log('Initial logical state:', state);
+      console.log('Initial visual state cubies:', visualState.length);
+      
+      for (let i = 0; i < fullSequence.length; i++) {
+        const move = fullSequence[i];
+        state = performMove(state, move);
+        visualState = applyVisualMove(visualState, move);
+        
+        console.log(`After move ${i + 1} (${move}):`, {
+          logicalSolved: isSolved(state),
+          visualCubies: visualState.length
+        });
+      }
+      
+      const logicalSolved = isSolved(state);
+      console.log('Final logical state is solved:', logicalSolved);
+      
+      return logicalSolved;
     }
   }))
 );

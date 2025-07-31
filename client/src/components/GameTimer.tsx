@@ -14,7 +14,11 @@ export default function GameTimer() {
       interval = setInterval(() => {
         setElapsedTime(Date.now() - timerStartTime);
       }, 10); // Update every 10ms for smooth display
-    } else if (!isTimerRunning && moves.length === 0) {
+    } else if (!isTimerRunning && timerStartTime) {
+      // Keep showing the elapsed time even when timer is paused
+      setElapsedTime(Date.now() - timerStartTime);
+    } else if (!isTimerRunning && !timerStartTime && moves.length === 0) {
+      // Only reset to 0 when timer hasn't started and no moves made
       setElapsedTime(0);
     }
 
@@ -39,7 +43,7 @@ export default function GameTimer() {
           </div>
         </div>
         <div className="text-xs text-gray-400 mt-1">
-          {isTimerRunning ? 'Running' : 'Stopped'}
+          {isTimerRunning ? 'Running' : timerStartTime ? 'Paused' : 'Stopped'}
         </div>
       </CardContent>
     </Card>
