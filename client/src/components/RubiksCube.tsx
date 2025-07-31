@@ -1,4 +1,4 @@
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, useState } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { useKeyboardControls } from '@react-three/drei';
 import * as THREE from 'three';
@@ -46,9 +46,19 @@ export default function RubiksCube() {
     scrambleCube, 
     solveCube,
     animationProgress,
-    currentMove 
+    currentMove,
+    isSolving,
+    solutionMoves
   } = useCube();
   const { playHit } = useAudio();
+  
+  // This will help force re-renders when the visual cube changes
+  const [updateTrigger, setUpdateTrigger] = useState(0);
+  
+  // Force update when visual cube changes
+  useEffect(() => {
+    setUpdateTrigger(prev => prev + 1);
+  }, [visualCube, isSolving, solutionMoves]);
 
   // Keyboard controls
   const [, getKeys] = useKeyboardControls();
@@ -132,7 +142,7 @@ export default function RubiksCube() {
       
       return (
         <Cubie 
-          key={`cubie-${index}`}
+          key={`cubie-${index}-${updateTrigger}`}
           position={position} 
           faceColors={cubie.faceColors}
           id={`cubie-${index}`}
@@ -142,7 +152,7 @@ export default function RubiksCube() {
   };
 
   return (
-    <group ref={groupRef}>
+    <group ref={groupRef} key={`cube-${updateTrigger}`}>
       {generateCubies()}
     </group>
   );

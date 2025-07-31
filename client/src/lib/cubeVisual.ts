@@ -63,12 +63,15 @@ export function createVisualCube(): CubieState[] {
 
 // Apply a face rotation to the visual cube
 export function applyVisualMove(cubies: CubieState[], move: string): CubieState[] {
-  console.log(`Applying visual move: ${move}`);
+  console.log(`[DEBUG] Applying visual move: ${move}`);
+  console.log(`[DEBUG] Input cubies:`, JSON.stringify(cubies, null, 2).substring(0, 200) + '...');
   
   const newCubies = cubies.map(cubie => ({
     position: [...cubie.position] as [number, number, number],
     faceColors: { ...cubie.faceColors }
   }));
+  
+  console.log(`[DEBUG] Copied cubies:`, JSON.stringify(newCubies, null, 2).substring(0, 200) + '...');
   
   switch (move) {
     case 'U':

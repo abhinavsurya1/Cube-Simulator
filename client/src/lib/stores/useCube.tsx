@@ -51,12 +51,14 @@ export const useCube = create<CubeStore>()(
     visualCube: createVisualCube(),
     moves: [],
     solutionMoves: [],
-    currentMoveIndex: 0,
+    currentMoveIndex: -1,
     
+    // Animation state
     isAnimating: false,
     animationProgress: 0,
     currentMove: null,
     
+    // Solving state
     isSolving: false,
     isPaused: false,
     isPhase1: false,
@@ -118,88 +120,116 @@ export const useCube = create<CubeStore>()(
     solveCube: async () => {
       const state = get();
       if (state.isAnimating || state.isSolving) return;
+
+      console.log('Starting cube solve...');
       
-      console.log('Starting solve...');
-      
-      // Start timer when solving begins
-      get()._startTimer();
-      
-      set({ 
-        isSolving: true, 
+      // Set initial solving state
+      set({
+        isSolving: true,
+        isPaused: false,
         isPhase1: true,
+        isPhase2: false,
+        isSolved: false,
         solutionMoves: [],
-        currentMoveIndex: 0
+        currentMoveIndex: 0,
+        moves: []
       });
-      
+
       try {
-        const solution = await solveWithKociemba(state.cubeState);
-        console.log('Solution found:', solution);
+        // Get the current cube state
+        const cubeState = get().cubeState;
         
-        if (solution.length === 0) {
-          console.log('Cube is already solved!');
-          set({ 
-            isSolving: false, 
+        // Solve the cube using the Kociemba solver
+        console.log('Starting Kociemba solver...');
+        const solution = await solveWithKociemba(cubeState);
+        
+        if (!solution || solution.length === 0) {
+          console.log('No solution found or cube is already solved');
+          set({
+            isSolving: false,
             isPhase1: false,
-            isSolved: true 
+            isPhase2: false,
+            isSolved: true
           });
-          get()._stopTimer();
           return;
         }
+
+        console.log('Solution found:', solution);
         
-        set({ 
-          solutionMoves: solution,
-          currentMoveIndex: 0,
-          isPhase1: false,
-          isPhase2: true
-        });
+        // Set the solution moves
+        set({ solutionMoves: [...solution] });
         
-        // Execute solution moves with delays and visual updates
-        for (let i = 0; i < solution.length; i++) {
-          // Check for pause
-          while (get().isPaused) {
-            await new Promise(resolve => setTimeout(resolve, 100));
+        // Execute each move with a delay to show the animation
+        const executeNextMove = async (index: number) => {
+          if (index >= solution.length) {
+            // All moves completed
+            console.log('All solution moves completed');
+            set({
+              isSolving: false,
+              isPhase1: false,
+              isPhase2: false,
+              isSolved: true,
+              solutionMoves: []
+            });
+            return;
           }
           
-          const move = solution[i];
-          console.log(`Applying solution move ${i + 1}/${solution.length}: ${move}`);
+          const move = solution[index];
+          console.log(`Executing move ${index + 1}/${solution.length}:`, move);
           
-          // Apply move to both logical and visual state
-          const currentState = get();
-          const newLogicalState = performMove(currentState.cubeState, move);
-          const newVisualState = applyVisualMove(currentState.visualCube, move);
-          const newMoves = [...currentState.moves, move];
-          
+          // Update the current move for animation
           set({
-            cubeState: newLogicalState,
-            visualCube: newVisualState,
-            moves: newMoves,
-            currentMoveIndex: i + 1,
+            currentMove: move,
             isAnimating: true,
-            currentMove: move
+            animationProgress: 0
           });
           
-          // Animation delay
-          await new Promise(resolve => setTimeout(resolve, 600));
+          // Apply the move to the logical state
+          const newCubeState = performMove(get().cubeState, move);
           
-          set({ isAnimating: false, currentMove: null });
-        }
+          // Update visual cube state
+          const newVisualCube = applyVisualMove([...get().visualCube], move);
+          
+          // Update state with new cube state and visual cube
+          set({
+            cubeState: newCubeState,
+            visualCube: newVisualCube,
+            moves: [...get().moves, move],
+            currentMoveIndex: get().moves.length
+          });
+          
+          // Wait for animation to complete
+          await new Promise(resolve => setTimeout(resolve, 300));
+          
+          // Clear animation state
+          set({
+            isAnimating: false,
+            currentMove: null,
+            animationProgress: 0
+          });
+          
+          // Small delay before next move
+          await new Promise(resolve => setTimeout(resolve, 50));
+          
+          // Execute next move
+          executeNextMove(index + 1);
+        };
         
-        set({ 
-          isSolving: false, 
-          isPhase2: false, 
-          isSolved: true 
-        });
-        get()._stopTimer();
-        console.log('Cube solved successfully!');
+        // Start executing moves
+        executeNextMove(0);
         
       } catch (error) {
-        console.error('Solve failed:', error);
-        set({ 
-          isSolving: false, 
-          isPhase1: false, 
-          isPhase2: false 
+        console.error('Error solving cube:', error);
+        set({
+          isSolving: false,
+          isPhase1: false,
+          isPhase2: false,
+          isSolved: false,
+          solutionMoves: [],
+          isAnimating: false,
+          currentMove: null,
+          animationProgress: 0
         });
-        get()._stopTimer();
       }
     },
     

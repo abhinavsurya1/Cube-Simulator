@@ -13,7 +13,7 @@ export interface MoveDefinition {
 // Edges: 0-11 (starting from top-front, going clockwise around top, then middle, then bottom)
 
 export const MOVE_DEFINITIONS: { [key: string]: MoveDefinition } = {
-  // U face moves (Upper)
+  // U face moves (Upper) - No orientation changes for U moves
   'U': {
     cornerCycle: [0, 1, 2, 3],
     cornerOrientationChange: [],
@@ -33,16 +33,16 @@ export const MOVE_DEFINITIONS: { [key: string]: MoveDefinition } = {
     edgeOrientationChange: []
   },
   
-  // R face moves (Right)
+  // R face moves (Right) - Corners change orientation when moved
   'R': {
     cornerCycle: [0, 4, 7, 3],
-    cornerOrientationChange: [0, 4, 7, 3],
+    cornerOrientationChange: [0, 1, 2, 1], // 1 = clockwise, 2 = counter-clockwise
     edgeCycle: [1, 5, 9, 4],
     edgeOrientationChange: []
   },
   "R'": {
     cornerCycle: [3, 7, 4, 0],
-    cornerOrientationChange: [3, 7, 4, 0],
+    cornerOrientationChange: [1, 2, 1, 2], // 1 = clockwise, 2 = counter-clockwise
     edgeCycle: [4, 9, 5, 1],
     edgeOrientationChange: []
   },
@@ -53,18 +53,18 @@ export const MOVE_DEFINITIONS: { [key: string]: MoveDefinition } = {
     edgeOrientationChange: []
   },
   
-  // F face moves (Front)
+  // F face moves (Front) - Corners and edges change orientation
   'F': {
     cornerCycle: [3, 7, 6, 2],
-    cornerOrientationChange: [3, 7, 6, 2],
+    cornerOrientationChange: [1, 2, 1, 2], // 1 = clockwise, 2 = counter-clockwise
     edgeCycle: [2, 6, 10, 7],
-    edgeOrientationChange: [2, 6, 10, 7]
+    edgeOrientationChange: [1, 1, 1, 1] // Flip all edges
   },
   "F'": {
     cornerCycle: [2, 6, 7, 3],
-    cornerOrientationChange: [2, 6, 7, 3],
+    cornerOrientationChange: [1, 2, 1, 2], // 1 = clockwise, 2 = counter-clockwise
     edgeCycle: [7, 10, 6, 2],
-    edgeOrientationChange: [7, 10, 6, 2]
+    edgeOrientationChange: [1, 1, 1, 1] // Flip all edges
   },
   'F2': {
     cornerCycle: [3, 6, 7, 2],
@@ -73,16 +73,16 @@ export const MOVE_DEFINITIONS: { [key: string]: MoveDefinition } = {
     edgeOrientationChange: []
   },
   
-  // L face moves (Left)
+  // L face moves (Left) - Corners change orientation when moved
   'L': {
     cornerCycle: [1, 2, 6, 5],
-    cornerOrientationChange: [1, 2, 6, 5],
+    cornerOrientationChange: [2, 1, 2, 1], // 1 = clockwise, 2 = counter-clockwise
     edgeCycle: [3, 7, 11, 8],
     edgeOrientationChange: []
   },
   "L'": {
     cornerCycle: [5, 6, 2, 1],
-    cornerOrientationChange: [5, 6, 2, 1],
+    cornerOrientationChange: [1, 2, 1, 2], // 1 = clockwise, 2 = counter-clockwise
     edgeCycle: [8, 11, 7, 3],
     edgeOrientationChange: []
   },
@@ -93,7 +93,7 @@ export const MOVE_DEFINITIONS: { [key: string]: MoveDefinition } = {
     edgeOrientationChange: []
   },
   
-  // D face moves (Down)
+  // D face moves (Down) - No orientation changes for D moves
   'D': {
     cornerCycle: [4, 5, 6, 7],
     cornerOrientationChange: [],
@@ -113,18 +113,18 @@ export const MOVE_DEFINITIONS: { [key: string]: MoveDefinition } = {
     edgeOrientationChange: []
   },
   
-  // B face moves (Back)
+  // B face moves (Back) - Corners and edges change orientation
   'B': {
     cornerCycle: [0, 1, 5, 4],
-    cornerOrientationChange: [0, 1, 5, 4],
+    cornerOrientationChange: [1, 2, 1, 2], // 1 = clockwise, 2 = counter-clockwise
     edgeCycle: [0, 4, 8, 5],
-    edgeOrientationChange: [0, 4, 8, 5]
+    edgeOrientationChange: [1, 1, 1, 1] // Flip all edges
   },
   "B'": {
     cornerCycle: [4, 5, 1, 0],
-    cornerOrientationChange: [4, 5, 1, 0],
+    cornerOrientationChange: [1, 2, 1, 2], // 1 = clockwise, 2 = counter-clockwise
     edgeCycle: [5, 8, 4, 0],
-    edgeOrientationChange: [5, 8, 4, 0]
+    edgeOrientationChange: [1, 1, 1, 1] // Flip all edges
   },
   'B2': {
     cornerCycle: [0, 5, 1, 4],
