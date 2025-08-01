@@ -36,13 +36,13 @@ export const MOVE_DEFINITIONS: { [key: string]: MoveDefinition } = {
   // R face moves (Right) - Corners change orientation when moved
   'R': {
     cornerCycle: [0, 4, 7, 3],
-    cornerOrientationChange: [0, 1, 2, 1], // 1 = clockwise, 2 = counter-clockwise
+    cornerOrientationChange: [1, 2, 1, 2], // CHANGED: was [0, 1, 2, 1]
     edgeCycle: [1, 5, 9, 4],
     edgeOrientationChange: []
   },
   "R'": {
     cornerCycle: [3, 7, 4, 0],
-    cornerOrientationChange: [1, 2, 1, 2], // 1 = clockwise, 2 = counter-clockwise
+    cornerOrientationChange: [2, 1, 2, 1], // CHANGED: was [1, 2, 1, 2]
     edgeCycle: [4, 9, 5, 1],
     edgeOrientationChange: []
   },
@@ -76,13 +76,13 @@ export const MOVE_DEFINITIONS: { [key: string]: MoveDefinition } = {
   // L face moves (Left) - Corners change orientation when moved
   'L': {
     cornerCycle: [1, 2, 6, 5],
-    cornerOrientationChange: [2, 1, 2, 1], // 1 = clockwise, 2 = counter-clockwise
+    cornerOrientationChange: [1, 2, 1, 2], // CHANGED: was [2, 1, 2, 1]
     edgeCycle: [3, 7, 11, 8],
     edgeOrientationChange: []
   },
   "L'": {
     cornerCycle: [5, 6, 2, 1],
-    cornerOrientationChange: [1, 2, 1, 2], // 1 = clockwise, 2 = counter-clockwise
+    cornerOrientationChange: [2, 1, 2, 1], // CHANGED: was [1, 2, 1, 2]
     edgeCycle: [8, 11, 7, 3],
     edgeOrientationChange: []
   },
@@ -133,3 +133,37 @@ export const MOVE_DEFINITIONS: { [key: string]: MoveDefinition } = {
     edgeOrientationChange: []
   }
 };
+
+// Test function to verify move definitions
+export function testMoveDefinitions(): boolean {
+  console.log('=== TESTING MOVE DEFINITIONS ===');
+  
+  const requiredMoves = [
+    'U', "U'", 'U2',
+    'R', "R'", 'R2', 
+    'F', "F'", 'F2',
+    'L', "L'", 'L2',
+    'D', "D'", 'D2',
+    'B', "B'", 'B2'
+  ];
+  
+  let allDefined = true;
+  
+  for (const move of requiredMoves) {
+    if (!MOVE_DEFINITIONS[move]) {
+      console.error(`Missing move definition: ${move}`);
+      allDefined = false;
+    } else {
+      const def = MOVE_DEFINITIONS[move];
+      console.log(`${move}:`, {
+        cornerCycle: def.cornerCycle,
+        cornerOrientationChange: def.cornerOrientationChange,
+        edgeCycle: def.edgeCycle,
+        edgeOrientationChange: def.edgeOrientationChange
+      });
+    }
+  }
+  
+  console.log('All moves defined:', allDefined);
+  return allDefined;
+}

@@ -1,9 +1,11 @@
 import { create } from 'zustand';
 import { subscribeWithSelector } from 'zustand/middleware';
 import { CubeState, createSolvedCube, isSolved } from '../cubeState';
-import { executeMove as performMove, scramble, isValidMove, comprehensiveMoveTest, debugMoveSequence } from '../cubeLogic';
+import { executeMove as performMove, scramble, isValidMove, comprehensiveMoveTest, debugMoveSequence, testFixedMoves, debugMoveStepByStep, simpleMoveTest } from '../cubeLogic';
 import { solveCube as solveWithKociemba } from '../kociemba';
 import { CubieState, createVisualCube, applyVisualMove } from '../cubeVisual';
+import { testMoveDefinitions } from '../moves';
+import { testCubeJSIntegration } from '../cubejs-bridge';
 
 interface CubeStore {
   // Cube state
@@ -37,6 +39,8 @@ interface CubeStore {
   pauseSolving: () => void;
   resumeSolving: () => void;
   testMoveExecution: () => boolean;
+  debugSolver: () => void;
+  testCubeJSSolver: () => void;
   
   // Internal actions
   _applyMove: (move: string) => void;
@@ -134,6 +138,54 @@ export const useCube = create<CubeStore>()(
       console.log('Testing store move execution...');
       const storeTestPassed = get().testMoveExecution();
       console.log('Store test passed:', storeTestPassed);
+      
+      // Test the fixed move execution
+      console.log('Testing fixed move execution...');
+      const fixedMoveTestPassed = testFixedMoves();
+      console.log('Fixed move test passed:', fixedMoveTestPassed);
+      
+      // Test a simple sequence
+      console.log('Testing simple sequence...');
+      let testState = createSolvedCube();
+      const simpleSequence = ["R", "U", "R'", "U'"];
+      for (const move of simpleSequence) {
+        testState = performMove(testState, move);
+      }
+      // Apply 4 times - should return to solved
+      for (let i = 0; i < 3; i++) {
+        for (const move of simpleSequence) {
+          testState = performMove(testState, move);
+        }
+      }
+      const simpleTest = isSolved(testState);
+      console.log('Simple sequence test:', simpleTest);
+      
+      // Debug the solver
+      console.log('Debugging solver...');
+      get().debugSolver();
+      
+      // Test cubejs solver
+      console.log('Testing cubejs solver...');
+      get().testCubeJSSolver();
+      
+      // Debug move execution step by step
+      console.log('Debugging move execution...');
+      debugMoveStepByStep();
+      
+      // Test basic move execution
+      console.log('Testing basic move execution...');
+      const basicMoveTestPassed = simpleMoveTest();
+      console.log('Basic move test passed:', basicMoveTestPassed);
+      
+      // Test move definitions
+      console.log('Testing move definitions...');
+      const moveDefinitionsPassed = testMoveDefinitions();
+      console.log('Move definitions test passed:', moveDefinitionsPassed);
+      
+      // Test CubeJS integration
+      console.log('Testing CubeJS integration...');
+      const cubejsTestPassed = testCubeJSIntegration();
+      console.log('CubeJS integration test passed:', cubejsTestPassed);
       
       console.log('Initial cube state:', {
         corners: state.cubeState.cornerPositions.join(','),
@@ -385,7 +437,71 @@ export const useCube = create<CubeStore>()(
       }
     },
     
-
+    // Debug function to test solver with simple scramble
+    debugSolver: () => {
+      console.log('=== DEBUGGING SOLVER ===');
+      
+      // Create a simple scrambled state
+      let testState = createSolvedCube();
+      const simpleScramble = ["R", "U", "R'", "U'", "F", "R", "U", "R'", "U'", "F'"];
+      
+      console.log('Applying simple scramble...');
+      for (const move of simpleScramble) {
+        testState = performMove(testState, move);
+      }
+      
+      console.log('Scrambled state:', testState);
+      console.log('Is scrambled state solved?', isSolved(testState));
+      
+      // Test the solver on this scrambled state
+      console.log('Testing solver on scrambled state...');
+      solveWithKociemba(testState).then(solution => {
+        console.log('Solver returned solution:', solution);
+        
+        // Apply the solution
+        let finalState = { ...testState };
+        for (const move of solution) {
+          finalState = performMove(finalState, move);
+        }
+        
+        console.log('Final state after solving:', finalState);
+        console.log('Is final state solved?', isSolved(finalState));
+      });
+    },
+    
+    // Test cubejs solver with simple scramble
+    testCubeJSSolver: () => {
+      console.log('=== TESTING CUBEJS SOLVER ===');
+      
+      // Create a simple scrambled state
+      let testState = createSolvedCube();
+      const simpleScramble = ["R", "U", "R'", "U'", "F", "R", "U", "R'", "U'", "F'"];
+      
+      console.log('Applying simple scramble...');
+      for (const move of simpleScramble) {
+        testState = performMove(testState, move);
+      }
+      
+      console.log('Scrambled state:', testState);
+      console.log('Is scrambled state solved?', isSolved(testState));
+      
+      // Test the cubejs solver on this scrambled state
+      console.log('Testing cubejs solver on scrambled state...');
+      solveWithKociemba(testState).then(solution => {
+        console.log('CubeJS solver returned solution:', solution);
+        
+        // Apply the solution
+        let finalState = { ...testState };
+        for (const move of solution) {
+          finalState = performMove(finalState, move);
+        }
+        
+        console.log('Final state after solving:', finalState);
+        console.log('Is final state solved?', isSolved(finalState));
+      }).catch(error => {
+        console.error('CubeJS solver error:', error);
+      });
+    },
     
     // Internal actions
     _applyMove: (move: string) => {
