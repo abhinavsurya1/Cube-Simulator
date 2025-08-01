@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { subscribeWithSelector } from 'zustand/middleware';
 import { CubeState, createSolvedCube, isSolved } from '../cubeState';
 import { executeMove as performMove, scramble, isValidMove, comprehensiveMoveTest, debugMoveSequence, testFixedMoves, debugMoveStepByStep, simpleMoveTest } from '../cubeLogic';
-import { solveWithCubeJS } from '../cubejs-bridge';
+import { solveWithCubeJS, convertToCubeJS, convertFromCubeJS } from '../cubejs-bridge';
 import { CubieState, createVisualCube, applyVisualMove } from '../cubeVisual';
 import { testMoveDefinitions } from '../moves';
 import { testCubeJSIntegration } from '../cubejs-bridge';
@@ -39,6 +39,7 @@ interface CubeStore {
   resetCube: () => void;
   pauseSolving: () => void;
   resumeSolving: () => void;
+  clearError: () => void;
   testMoveExecution: () => boolean;
   debugSolver: () => void;
   testCubeJSSolver: () => void;
@@ -192,6 +193,7 @@ export const useCube = create<CubeStore>()(
         }
 
         console.log('Solution found:', solution);
+        console.log('Solution length:', solution.length);
         
         // Set the solution moves
         set({ solutionMoves: [...solution] });
@@ -271,8 +273,21 @@ export const useCube = create<CubeStore>()(
             animationProgress: 0
           });
           
-          // Apply the move to the logical state
-          const newCubeState = performMove({...stateBefore}, move);
+          // Apply the move using CubeJS to ensure consistency
+          console.log('Converting state to CubeJS format...');
+          const cubejsState = convertToCubeJS({...stateBefore});
+          console.log('CubeJS state:', cubejsState);
+          
+          console.log('Creating CubeJS instance...');
+          const cubejsCube = new window.Cube(cubejsState);
+          console.log('CubeJS instance created, applying move...');
+          
+          cubejsCube.move(move);
+          console.log('Move applied to CubeJS instance');
+          
+          console.log('Converting back to our format...');
+          const newCubeState = convertFromCubeJS(cubejsCube.toJSON());
+          console.log('Converted state:', newCubeState);
           
           // Log state after move
           console.log('State after move:', {
@@ -315,6 +330,7 @@ export const useCube = create<CubeStore>()(
         
       } catch (error) {
         console.error('Error solving cube:', error);
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
         set({
           isSolving: false,
           isPhase1: false,
@@ -323,7 +339,8 @@ export const useCube = create<CubeStore>()(
           solutionMoves: [],
           isAnimating: false,
           currentMove: null,
-          animationProgress: 0
+          animationProgress: 0,
+          error: errorMessage
         });
       }
     },
@@ -343,8 +360,13 @@ export const useCube = create<CubeStore>()(
         isTimerRunning: false,
         timerStartTime: null,
         isAnimating: false,
-        currentMove: null
+        currentMove: null,
+        error: null
       });
+    },
+    
+    clearError: () => {
+      set({ error: null });
     },
     
     pauseSolving: () => {

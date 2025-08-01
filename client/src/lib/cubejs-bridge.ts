@@ -14,9 +14,23 @@ let solverInitializationQueue: Array<(initialized: boolean) => void> = [];
 
 // Function to check if CubeJS is available
 function isCubeJSAvailable(): boolean {
-  return typeof window !== 'undefined' && 
-         window.Cube !== undefined && 
-         typeof window.Cube.initSolver === 'function';
+  if (typeof window === 'undefined') {
+    console.log('Not in browser environment');
+    return false;
+  }
+  
+  if (!window.Cube) {
+    console.log('CubeJS not loaded yet');
+    return false;
+  }
+  
+  if (typeof window.Cube.initSolver !== 'function') {
+    console.log('CubeJS solver not available');
+    return false;
+  }
+  
+  console.log('CubeJS is available and ready');
+  return true;
 }
 
 // Function to wait for CubeJS to be available
@@ -106,6 +120,7 @@ export function initializeSolver(): Promise<boolean> {
 // Convert our CubeState to cubejs format
 export function convertToCubeJS(state: CubeState): any {
   return {
+    center: [0, 1, 2, 3, 4, 5], // Centers are always in order for a 3x3 cube
     cp: [...state.cornerPositions],
     co: [...state.cornerOrientations],
     ep: [...state.edgePositions],
@@ -176,10 +191,17 @@ export async function solveWithCubeJS(state: CubeState): Promise<string[]> {
     
     // Create a cubejs instance
     console.log('Creating CubeJS instance...');
-    const cube = new window.Cube(cubejsState);
-    
-    if (!cube || typeof cube.solve !== 'function') {
-      throw new Error('CubeJS instance creation failed or solve method not found');
+    let cube;
+    try {
+      cube = new window.Cube(cubejsState);
+      
+      if (!cube || typeof cube.solve !== 'function') {
+        throw new Error('CubeJS instance creation failed or solve method not found');
+      }
+    } catch (error: unknown) {
+      console.error('Error creating CubeJS instance:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      throw new Error(`Failed to create CubeJS instance: ${errorMessage}`);
     }
     
     // Solve the cube
@@ -201,9 +223,20 @@ export async function solveWithCubeJS(state: CubeState): Promise<string[]> {
       console.log(`Solution found with ${moves.length} moves:`, moves.join(' '));
     }
     
+    // Verify the solution works by applying it to a fresh cube
+    console.log('Verifying solution with CubeJS...');
+    const testCube = new window.Cube(cubejsState);
+    testCube.move(solution);
+    const isSolvedAfterSolution = testCube.isSolved();
+    console.log('CubeJS verification - is solved after applying solution:', isSolvedAfterSolution);
+    
+    if (!isSolvedAfterSolution) {
+      console.warn('CubeJS solution verification failed!');
+    }
+    
     return moves;
     
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error in CubeJS solver:', error);
     const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
     throw new Error(`CubeJS solver error: ${errorMessage}`);
@@ -232,22 +265,91 @@ export async function generateScramble(): Promise<string[]> {
 // Test function to verify cubejs integration
 export async function testCubeJSIntegration(): Promise<boolean> {
   try {
-    if (typeof window === 'undefined' || !window.Cube) {
+    console.log('=== TESTING CUBEJS INTEGRATION ===');
+    
+    // Wait for CubeJS to be available
+    const cubeJSAvailable = await waitForCubeJS();
+    if (!cubeJSAvailable) {
       console.error('CubeJS library not available');
       return false;
     }
 
     // Test basic cube creation
+    console.log('Testing basic cube creation...');
     const cube = new window.Cube();
-    console.log('CubeJS test cube created:', cube.isSolved());
+    console.log('Cube created successfully:', cube.isSolved());
     
     // Test move application
+    console.log('Testing move application...');
     cube.move("R U R' U'");
     console.log('After R U R\' U\':', cube.isSolved());
     
+    // Test solver initialization
+    console.log('Testing solver initialization...');
+    const solverInitialized = await initializeSolver();
+    console.log('Solver initialized:', solverInitialized);
+    
+    if (solverInitialized) {
+      // Test solving a simple scramble
+      console.log('Testing solver with simple scramble...');
+      const testCube = new window.Cube();
+      testCube.move("R U R' U'");
+      const solution = testCube.solve();
+      console.log('Solution found:', solution);
+      console.log('Solution length:', solution ? solution.split(' ').length : 0);
+    }
+    
+    console.log('=== CUBEJS INTEGRATION TEST COMPLETE ===');
     return true;
   } catch (error) {
     console.error('CubeJS integration test failed:', error);
     return false;
   }
+}
+
+// Simple test function to verify the library loads
+export function testCubeJSLoading(): boolean {
+  try {
+    if (typeof window === 'undefined') {
+      console.log('Not in browser environment');
+      return false;
+    }
+    
+    if (!window.Cube) {
+      console.log('CubeJS not loaded yet');
+      return false;
+    }
+    
+    console.log('CubeJS library is loaded');
+    console.log('Available methods:', Object.keys(window.Cube));
+    
+    // Test basic functionality
+    const cube = new window.Cube();
+    console.log('Basic cube creation works:', cube.isSolved());
+    
+    // Test move functionality
+    cube.move("R U R' U'");
+    console.log('Move functionality works:', !cube.isSolved());
+    
+    // Test state conversion
+    const testState = {
+      cornerPositions: [0, 1, 2, 3, 4, 5, 6, 7],
+      cornerOrientations: [0, 0, 0, 0, 0, 0, 0, 0],
+      edgePositions: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11],
+      edgeOrientations: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+    };
+    
+    const convertedState = convertToCubeJS(testState);
+    console.log('State conversion works:', convertedState);
+    
+    const testCube = new window.Cube(convertedState);
+    console.log('Cube creation with converted state works:', testCube.isSolved());
+    
+    return true;
+  } catch (error) {
+    console.error('Error testing CubeJS loading:', error);
+    return false;
+  }
 } 
+
+ 

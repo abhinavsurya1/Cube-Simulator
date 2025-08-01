@@ -10,6 +10,7 @@ import CubeControls from "./components/CubeControls";
 import GameTimer from "./components/GameTimer";
 import MoveCounter from "./components/MoveCounter";
 import SolverProgress from "./components/SolverProgress";
+import ErrorDisplay from "./components/ErrorDisplay";
 import TestCubeJS from "./components/TestCubeJS";
 
 // Define control keys for the cube
@@ -67,6 +68,17 @@ function App() {
               <GameTimer />
               <SolverProgress />
               <MoveCounter />
+            </div>
+            
+            {/* Error Display */}
+            <div style={{
+              position: 'absolute',
+              top: '50%',
+              left: '50%',
+              transform: 'translate(-50%, -50%)',
+              pointerEvents: 'auto'
+            }}>
+              <ErrorDisplay />
             </div>
             
             {/* Bottom Controls */}

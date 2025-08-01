@@ -15,7 +15,10 @@
       // Log when the library is loaded
       console.log('Loading CubeJS library...');
     </script>
-    <script src="/cubejs-bundle.js" onload="console.log('CubeJS library loaded successfully')"></script>
+    <!-- Load CubeJS core library -->
+    <script src="/cubejs-cube.js" onload="console.log('CubeJS core loaded')"></script>
+    <!-- Load CubeJS solver -->
+    <script src="/cubejs-solve.js" onload="console.log('CubeJS solver loaded')"></script>
     <script>
       // Verify CubeJS is loaded
       window.addEventListener('load', function() {
