@@ -10,6 +10,7 @@ import CubeControls from "./components/CubeControls";
 import GameTimer from "./components/GameTimer";
 import MoveCounter from "./components/MoveCounter";
 import SolverProgress from "./components/SolverProgress";
+import TestCubeJS from "./components/TestCubeJS";
 
 // Define control keys for the cube
 const controls = [

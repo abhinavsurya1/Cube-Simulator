@@ -3,12 +3,33 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1" />
-    <!-- CubeJS Library -->
-    <script src="/cube.js"></script>
-    <script src="/solve.js"></script>
+    <title>Rubik's Cube Simulator</title>
   </head>
   <body>
     <div id="root"></div>
+    <!-- Load CubeJS library first -->
+    <script>
+      // Create a global Cube object if it doesn't exist
+      window.Cube = window.Cube || {};
+      
+      // Log when the library is loaded
+      console.log('Loading CubeJS library...');
+    </script>
+    <script src="/cubejs-bundle.js" onload="console.log('CubeJS library loaded successfully')"></script>
+    <script>
+      // Verify CubeJS is loaded
+      window.addEventListener('load', function() {
+        console.log('Window loaded, checking CubeJS availability...');
+        if (window.Cube && typeof window.Cube.initSolver === 'function') {
+          console.log('CubeJS is properly initialized');
+          // Initialize the solver immediately
+          window.Cube.initSolver();
+        } else {
+          console.error('CubeJS is not properly loaded or initialized');
+        }
+      });
+    </script>
+    <!-- Load React app after CubeJS is loaded -->
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
