@@ -50,7 +50,6 @@ export default function RubiksCube() {
     isSolving,
     solutionMoves
   } = useCube();
-  const { playHit } = useAudio();
   
   // This will help force re-renders when the visual cube changes
   const [updateTrigger, setUpdateTrigger] = useState(0);
@@ -87,13 +86,13 @@ export default function RubiksCube() {
       if (move) {
         console.log(`Executing move: ${move}`);
         executeMove(move);
-        playHit();
+        // playHit() is now called in the store's _applyMove function
       }
     };
 
     window.addEventListener('keydown', handleKeyPress);
     return () => window.removeEventListener('keydown', handleKeyPress);
-  }, [isAnimating, executeMove, scrambleCube, solveCube, playHit]);
+  }, [isAnimating, executeMove, scrambleCube, solveCube]);
 
   // Animation frame
   useFrame(() => {

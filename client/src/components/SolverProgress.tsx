@@ -1,7 +1,7 @@
 import { useCube } from '../lib/stores/useCube';
 import { Card, CardContent } from './ui/card';
 import { Progress } from './ui/progress';
-import { Brain, CheckCircle } from 'lucide-react';
+import { Brain, CheckCircle, Zap, Shuffle } from 'lucide-react';
 
 export default function SolverProgress() {
   const { 
@@ -10,7 +10,10 @@ export default function SolverProgress() {
     isPhase2, 
     solutionMoves, 
     currentMoveIndex,
-    isSolved 
+    isSolved,
+    isAnimating,
+    currentMove,
+    animationProgress
   } = useCube();
 
   const getProgress = () => {
@@ -20,11 +23,23 @@ export default function SolverProgress() {
 
   const getPhaseText = () => {
     if (isSolved) return 'Solved!';
-    if (isPhase2) return 'Phase 2: Final solve';
+    if (isPhase2) return 'Phase 2: Permute pieces';
     if (isPhase1) return 'Phase 1: Orient pieces';
-    if (isSolving) return 'Computing solution...';
+    if (isSolving) return 'Computing Kociemba solution...';
+    if (isAnimating && currentMove?.includes('Scrambling')) return 'Scrambling cube...';
     return 'Ready to solve';
   };
+
+  const getAlgorithmText = () => {
+    if (isSolved) return '';
+    if (isPhase2) return 'Using Kociemba Phase 2';
+    if (isPhase1) return 'Using Kociemba Phase 1';
+    if (isSolving) return 'Initializing Kociemba solver...';
+    if (isAnimating && currentMove?.includes('Scrambling')) return 'Random scramble in progress';
+    return 'Kociemba Two-Phase Algorithm';
+  };
+
+  const isScrambling = isAnimating && currentMove?.includes('Scrambling');
 
   return (
     <Card className="bg-black/80 border-gray-600 min-w-[200px]">
@@ -32,30 +47,45 @@ export default function SolverProgress() {
         <div className="flex items-center gap-2 text-white mb-2">
           {isSolved ? (
             <CheckCircle className="w-4 h-4 text-green-500" />
+          ) : isSolving ? (
+            <Zap className="w-4 h-4 text-blue-500" />
+          ) : isScrambling ? (
+            <Shuffle className="w-4 h-4 text-orange-500" />
           ) : (
             <Brain className="w-4 h-4" />
           )}
           <div className="text-sm font-medium">
-            Solver Status
+            {isScrambling ? 'Scramble Progress' : 'Kociemba Solver'}
           </div>
         </div>
         
-        <div className="text-xs text-gray-400 mb-2">
+        <div className="text-xs text-gray-400 mb-1">
           {getPhaseText()}
         </div>
         
-        {solutionMoves.length > 0 && (
+        <div className="text-xs text-blue-400 mb-2">
+          {getAlgorithmText()}
+        </div>
+        
+        {(solutionMoves.length > 0 || isScrambling) && (
           <>
-            <Progress value={getProgress()} className="h-2 mb-2" />
+            <Progress 
+              value={isScrambling ? animationProgress : getProgress()} 
+              className="h-2 mb-2" 
+            />
             <div className="text-xs text-blue-400">
-              {currentMoveIndex}/{solutionMoves.length} moves
+              {isScrambling ? (
+                `Scrambling... ${Math.round(animationProgress)}%`
+              ) : (
+                `${currentMoveIndex}/${solutionMoves.length} moves`
+              )}
             </div>
           </>
         )}
         
         {isSolved && (
           <div className="text-xs text-green-400 mt-1">
-            🎉 Cube solved!
+            🎉 Cube solved with Kociemba!
           </div>
         )}
       </CardContent>

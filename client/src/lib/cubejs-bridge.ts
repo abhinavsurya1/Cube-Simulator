@@ -1,4 +1,17 @@
-// Bridge to integrate cubejs library with our cube state system
+/**
+ * CubeJS Bridge - External Solver Integration
+ * 
+ * This bridge provides integration with the CubeJS library
+ * for advanced solving capabilities. In practice, we use our
+ * own reverse history solver for guaranteed solutions.
+ * 
+ * The CubeJS library provides:
+ * - Advanced solving algorithms
+ * - Optimal move sequences
+ * - State validation
+ * 
+ * Our reverse history approach is more reliable for our use case.
+ */
 import { CubeState } from './cubeState';
 
 declare global {

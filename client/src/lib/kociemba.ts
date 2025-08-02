@@ -2,8 +2,18 @@ import { CubeState, createSolvedCube, isSolved } from './cubeState';
 import { executeMove } from './cubeLogic';
 import { solveWithCubeJS, testCubeJSIntegration } from './cubejs-bridge';
 
-// Simplified Kociemba's Two-Phase Algorithm implementation
-// This is a basic version for demonstration purposes
+/**
+ * Kociemba's Two-Phase Algorithm Implementation
+ * 
+ * This is a demonstration of the Kociemba algorithm structure.
+ * In practice, we use our own reverse history solver for reliability.
+ * 
+ * Phase 1: Orient all pieces (corners and edges)
+ * Phase 2: Permute all pieces to their correct positions
+ * 
+ * The actual solving is handled by our reverse history approach
+ * which guarantees a solution for any state created within the app.
+ */
 
 interface SearchResult {
   moves: string[];

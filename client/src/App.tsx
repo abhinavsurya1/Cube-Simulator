@@ -34,6 +34,36 @@ const controls = [
 // Main App component
 function App() {
   const [showCanvas, setShowCanvas] = useState(false);
+  const { setHitSound, setSuccessSound } = useAudio();
+
+  // Initialize audio when component mounts
+  useEffect(() => {
+    console.log('Initializing audio...');
+    
+    // Load hit sound
+    const hitSound = new Audio('/sounds/hit.mp3');
+    hitSound.preload = 'auto';
+    hitSound.addEventListener('canplaythrough', () => {
+      console.log('Hit sound loaded successfully');
+      setHitSound(hitSound);
+    });
+    hitSound.addEventListener('error', (e) => {
+      console.error('Failed to load hit sound:', e);
+    });
+    
+    // Load success sound
+    const successSound = new Audio('/sounds/success.mp3');
+    successSound.preload = 'auto';
+    successSound.addEventListener('canplaythrough', () => {
+      console.log('Success sound loaded successfully');
+      setSuccessSound(successSound);
+    });
+    successSound.addEventListener('error', (e) => {
+      console.error('Failed to load success sound:', e);
+    });
+    
+    console.log('Audio initialization started');
+  }, [setHitSound, setSuccessSound]);
 
   // Show the canvas once everything is loaded
   useEffect(() => {

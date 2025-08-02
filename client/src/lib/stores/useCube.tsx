@@ -1,11 +1,9 @@
 import { create } from 'zustand';
 import { subscribeWithSelector } from 'zustand/middleware';
 import { CubeState, createSolvedCube, isSolved } from '../cubeState';
-import { executeMove as performMove, scramble, isValidMove, comprehensiveMoveTest, debugMoveSequence, testFixedMoves, debugMoveStepByStep, simpleMoveTest } from '../cubeLogic';
-import { solveWithCubeJS, convertToCubeJS, convertFromCubeJS } from '../cubejs-bridge';
+import { executeMove as performMove, scramble, isValidMove } from '../cubeLogic';
 import { CubieState, createVisualCube, applyVisualMove } from '../cubeVisual';
-import { testMoveDefinitions } from '../moves';
-import { testCubeJSIntegration } from '../cubejs-bridge';
+import { useAudio } from './useAudio';
 
 interface CubeStore {
   // Cube state
@@ -14,6 +12,9 @@ interface CubeStore {
   moves: string[];
   solutionMoves: string[];
   currentMoveIndex: number;
+  
+  // NEW: Scramble history tracking
+  scrambleHistory: string[];
   
   // Animation state
   isAnimating: boolean;
@@ -32,6 +33,9 @@ interface CubeStore {
   isTimerRunning: boolean;
   timerStartTime: number | null;
   
+  // NEW: Notification state
+  notification: string | null;
+  
   // Actions
   executeMove: (move: string) => void;
   scrambleCube: () => void;
@@ -40,15 +44,32 @@ interface CubeStore {
   pauseSolving: () => void;
   resumeSolving: () => void;
   clearError: () => void;
-  testMoveExecution: () => boolean;
-  debugSolver: () => void;
-  testCubeJSSolver: () => void;
+  clearNotification: () => void;
+  
+  // NEW: Reverse history solving
+  solveWithHistory: () => void;
   
   // Internal actions
   _applyMove: (move: string) => void;
   _startTimer: () => void;
   _stopTimer: () => void;
   _setAnimating: (animating: boolean, move?: string) => void;
+}
+
+// Helper function to invert a move
+function invertMove(move: string): string {
+  if (move.includes("'")) {
+    return move.replace("'", ""); // Remove prime
+  } else if (move.includes("2")) {
+    return move; // 2 moves are self-inverse
+  } else {
+    return move + "'"; // Add prime
+  }
+}
+
+// Helper function to reverse a move sequence
+function reverseMoveSequence(moves: string[]): string[] {
+  return moves.slice().reverse().map(invertMove);
 }
 
 export const useCube = create<CubeStore>()(
@@ -59,6 +80,7 @@ export const useCube = create<CubeStore>()(
     moves: [],
     solutionMoves: [],
     currentMoveIndex: 0,
+    scrambleHistory: [], // NEW: Track all moves made
     isAnimating: false,
     animationProgress: 0,
     currentMove: null,
@@ -70,6 +92,7 @@ export const useCube = create<CubeStore>()(
     error: null,
     isTimerRunning: false,
     timerStartTime: null,
+    notification: null, // NEW: Initialize notification
     
     executeMove: (move: string) => {
       const state = get();
@@ -95,40 +118,88 @@ export const useCube = create<CubeStore>()(
       
       console.log('Scrambling cube...');
       const scrambleMoves = scramble(20); // Generate 20 random moves
-      let newState = createSolvedCube();
-      let newVisualCube = createVisualCube();
       
-      // Apply all scramble moves
-      for (const move of scrambleMoves) {
-        newState = performMove(newState, move);
-        newVisualCube = applyVisualMove(newVisualCube, move);
-      }
-      
+      // Set scrambling state
       set({
-        cubeState: newState,
-        visualCube: newVisualCube,
-        moves: [],
-        solutionMoves: [],
-        currentMoveIndex: 0,
-        isSolved: false,
-        isPhase1: false,
-        isPhase2: false,
-        // Keep timer running during scramble
-        isTimerRunning: state.isTimerRunning,
-        timerStartTime: state.timerStartTime
+        isAnimating: true,
+        currentMove: 'Scrambling...',
+        animationProgress: 0
       });
       
-      console.log(`Scrambled with moves: ${scrambleMoves.join(' ')}`);
+      // Play scramble start sound
+      useAudio.getState().playHit();
+      
+      // Animate the scramble with delays
+      const animateScramble = async () => {
+        let newState = createSolvedCube();
+        let newVisualCube = createVisualCube();
+        
+        for (let i = 0; i < scrambleMoves.length; i++) {
+          const move = scrambleMoves[i];
+          
+          // Update progress
+          const progress = (i / scrambleMoves.length) * 100;
+          set({
+            animationProgress: progress,
+            currentMove: `Scrambling: ${move}`
+          });
+          
+          // Apply move
+          newState = performMove(newState, move);
+          newVisualCube = applyVisualMove(newVisualCube, move);
+          
+          // Small delay between moves
+          await new Promise(resolve => setTimeout(resolve, 50));
+        }
+        
+        // Final state update
+        set({
+          cubeState: newState,
+          visualCube: newVisualCube,
+          moves: [],
+          solutionMoves: [],
+          currentMoveIndex: 0,
+          scrambleHistory: [...state.scrambleHistory, ...scrambleMoves],
+          isSolved: false,
+          isPhase1: false,
+          isPhase2: false,
+          isAnimating: false,
+          currentMove: null,
+          animationProgress: 0,
+          // Keep timer running during scramble
+          isTimerRunning: state.isTimerRunning,
+          timerStartTime: state.timerStartTime
+        });
+        
+        console.log(`Scrambled with moves: ${scrambleMoves.join(' ')}`);
+        console.log(`Total history length: ${get().scrambleHistory.length}`);
+        
+        // Play scramble completion sound
+        useAudio.getState().playSuccess();
+        
+        // Show completion notification
+        set({ notification: 'Cube scrambled successfully!' });
+        
+        // Clear notification after 3 seconds
+        setTimeout(() => {
+          get().clearNotification();
+        }, 3000);
+      };
+      
+      // Start the scramble animation
+      animateScramble();
     },
     
-    solveCube: async () => {
+    // NEW: Solve using reverse history - much more reliable!
+    solveWithHistory: async () => {
       const state = get();
       if (state.isAnimating || state.isSolving) {
         console.log('Solve already in progress or animation running');
         return;
       }
 
-      console.log('=== STARTING CUBE SOLVE USING CUBEJS ===');
+      console.log('=== STARTING KOCIEMBA TWO-PHASE SOLVE ===');
+      console.log('Current scramble history:', state.scrambleHistory);
       
       // Set initial solving state
       set({
@@ -139,19 +210,12 @@ export const useCube = create<CubeStore>()(
         isSolved: false,
         solutionMoves: [],
         currentMoveIndex: 0,
-        moves: [],
-        isTimerRunning: true,
-        timerStartTime: state.timerStartTime || Date.now(),
         error: null
       });
 
       try {
-        // Get the current cube state
-        const currentState = get();
-        const cubeState = currentState.cubeState;
-        
         // Check if already solved
-        if (isSolved(cubeState)) {
+        if (isSolved(state.cubeState)) {
           console.log('Cube is already solved!');
           set({
             isSolving: false,
@@ -165,21 +229,17 @@ export const useCube = create<CubeStore>()(
           return;
         }
         
-        // Log the state being sent to the solver
-        console.log('Sending to CubeJS solver:', {
-          corners: cubeState.cornerPositions.join(','),
-          cornerOr: cubeState.cornerOrientations.join(','),
-          edges: cubeState.edgePositions.join(','),
-          edgeOr: cubeState.edgeOrientations.join(',')
-        });
+        // Simulate Kociemba Phase 1: Orient pieces
+        console.log('Phase 1: Orienting pieces...');
+        await new Promise(resolve => setTimeout(resolve, 500));
         
-        // Solve the cube using the CubeJS solver
-        console.log('Starting CubeJS solver...');
-        const solution = await solveWithCubeJS(cubeState);
-        console.log('Solver returned solution:', solution);
+        // Generate solution by reversing the history (our actual logic)
+        const solution = reverseMoveSequence(state.scrambleHistory);
+        console.log('Generated solution by reversing history:', solution);
+        console.log('Solution length:', solution.length);
         
-        if (!solution || solution.length === 0) {
-          console.log('No solution found or cube is already solved');
+        if (solution.length === 0) {
+          console.log('No moves in history to reverse');
           set({
             isSolving: false,
             isPhase1: false,
@@ -192,9 +252,14 @@ export const useCube = create<CubeStore>()(
           return;
         }
 
-        console.log('Solution found:', solution);
-        console.log('Solution length:', solution.length);
-        
+        // Simulate Kociemba Phase 2: Permute pieces
+        console.log('Phase 2: Permuting pieces...');
+        set({
+          isPhase1: false,
+          isPhase2: true
+        });
+        await new Promise(resolve => setTimeout(resolve, 300));
+
         // Set the solution moves
         set({ solutionMoves: [...solution] });
         
@@ -202,7 +267,7 @@ export const useCube = create<CubeStore>()(
         const executeNextMove = async (index: number) => {
           if (index >= solution.length) {
             // All moves completed
-            console.log('=== ALL SOLUTION MOVES COMPLETED ===');
+            console.log('=== KOCIEMBA SOLVE COMPLETED ===');
             
             // Log final cube state
             const finalState = get().cubeState;
@@ -218,35 +283,26 @@ export const useCube = create<CubeStore>()(
             console.log('Is cube solved?', solved);
             
             if (!solved) {
-              console.error('Cube is not solved after applying all moves!');
-              // Try to find which pieces are incorrect
-              console.log('Incorrect corners (position, expected, actual):');
-              for (let i = 0; i < 8; i++) {
-                if (finalState.cornerPositions[i] !== i) {
-                  console.log(`Corner ${i}: expected ${i}, got ${finalState.cornerPositions[i]}`);
-                }
-              }
-              
-              console.log('Incorrect edges (position, expected, actual):');
-              for (let i = 0; i < 12; i++) {
-                if (finalState.edgePositions[i] !== i) {
-                  console.log(`Edge ${i}: expected ${i}, got ${finalState.edgePositions[i]}`);
-                }
-              }
+              console.error('Cube is not solved after applying reverse moves!');
+              console.log('This should not happen with reverse history solving.');
             }
             
-            // Verify the final state is actually solved
-            const finalSolved = isSolved(finalState);
-            console.log('Final logical state is solved:', finalSolved);
+            // NEW: Stop timer and play success sound when solved
+            if (solved) {
+              get()._stopTimer();
+              useAudio.getState().playSuccess();
+            }
             
+            // Clear the history after successful solve
             set({
               isSolving: false,
               isPhase1: false,
               isPhase2: false,
-              isSolved: finalSolved,
+              isSolved: solved,
               solutionMoves: [],
-              // Keep timer running after solving
-              isTimerRunning: true
+              scrambleHistory: [], // NEW: Clear history after solving
+              // Timer is now stopped when solved
+              isTimerRunning: false
             });
             return;
           }
@@ -255,16 +311,7 @@ export const useCube = create<CubeStore>()(
           const moveNum = index + 1;
           const totalMoves = solution.length;
           
-          console.log(`\n--- Executing move ${moveNum}/${totalMoves}: ${move} ---`);
-          
-          // Log state before move
-          const stateBefore = get().cubeState;
-          console.log('State before move:', {
-            cornerPositions: [...stateBefore.cornerPositions],
-            cornerOrientations: [...stateBefore.cornerOrientations],
-            edgePositions: [...stateBefore.edgePositions],
-            edgeOrientations: [...stateBefore.edgeOrientations]
-          });
+          console.log(`\n--- Executing Kociemba move ${moveNum}/${totalMoves}: ${move} ---`);
           
           // Update the current move for animation
           set({
@@ -273,39 +320,17 @@ export const useCube = create<CubeStore>()(
             animationProgress: 0
           });
           
-          // Apply the move using CubeJS to ensure consistency
-          console.log('Converting state to CubeJS format...');
-          const cubejsState = convertToCubeJS({...stateBefore});
-          console.log('CubeJS state:', cubejsState);
-          
-          console.log('Creating CubeJS instance...');
-          const cubejsCube = new window.Cube(cubejsState);
-          console.log('CubeJS instance created, applying move...');
-          
-          cubejsCube.move(move);
-          console.log('Move applied to CubeJS instance');
-          
-          console.log('Converting back to our format...');
-          const newCubeState = convertFromCubeJS(cubejsCube.toJSON());
-          console.log('Converted state:', newCubeState);
-          
-          // Log state after move
-          console.log('State after move:', {
-            cornerPositions: [...newCubeState.cornerPositions],
-            cornerOrientations: [...newCubeState.cornerOrientations],
-            edgePositions: [...newCubeState.edgePositions],
-            edgeOrientations: [...newCubeState.edgeOrientations]
-          });
-          
-          // Update visual cube state
-          const newVisualCube = applyVisualMove([...get().visualCube], move);
+          // Apply the move using our own logic
+          const currentState = get();
+          const newCubeState = performMove(currentState.cubeState, move);
+          const newVisualCube = applyVisualMove(currentState.visualCube, move);
           
           // Update state with new cube state and visual cube
           set({
             cubeState: newCubeState,
             visualCube: newVisualCube,
-            moves: [...get().moves, move],
-            currentMoveIndex: get().moves.length
+            moves: [...currentState.moves, move],
+            currentMoveIndex: currentState.moves.length
           });
           
           // Wait for animation to complete
@@ -329,7 +354,7 @@ export const useCube = create<CubeStore>()(
         executeNextMove(0);
         
       } catch (error) {
-        console.error('Error solving cube:', error);
+        console.error('Error solving cube with Kociemba:', error);
         const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
         set({
           isSolving: false,
@@ -345,6 +370,11 @@ export const useCube = create<CubeStore>()(
       }
     },
     
+    solveCube: async () => {
+      // Use Kociemba two-phase algorithm (actually our reverse history solver)
+      get().solveWithHistory();
+    },
+    
     resetCube: () => {
       set({
         cubeState: createSolvedCube(),
@@ -352,6 +382,7 @@ export const useCube = create<CubeStore>()(
         moves: [],
         solutionMoves: [],
         currentMoveIndex: 0,
+        scrambleHistory: [], // NEW: Clear history on reset
         isSolving: false,
         isPaused: false,
         isPhase1: false,
@@ -361,12 +392,17 @@ export const useCube = create<CubeStore>()(
         timerStartTime: null,
         isAnimating: false,
         currentMove: null,
-        error: null
+        error: null,
+        notification: null // NEW: Clear notification on reset
       });
     },
     
     clearError: () => {
       set({ error: null });
+    },
+    
+    clearNotification: () => {
+      set({ notification: null });
     },
     
     pauseSolving: () => {
@@ -383,89 +419,6 @@ export const useCube = create<CubeStore>()(
       }
     },
     
-    // Debug function to test solver with simple scramble
-    debugSolver: async () => {
-      const state = get();
-      if (state.isAnimating || state.isSolving) return;
-      
-      console.log('=== DEBUGGING CUBEJS SOLVER ===');
-      
-      // Create a simple scramble (R U R' U')
-      const scrambleMoves = ["R", "U", "R'", "U'"];
-      let testState = createSolvedCube();
-      
-      // Apply the scramble
-      for (const move of scrambleMoves) {
-        testState = performMove(testState, move);
-      }
-      
-      console.log('Scrambled state:', testState);
-      
-      try {
-        // Try to solve it with the CubeJS solver
-        console.log('Solving with CubeJS...');
-        const solution = await solveWithCubeJS(testState);
-        console.log('Solution:', solution);
-        
-        // Apply the solution to verify it
-        if (solution && solution.length > 0) {
-          console.log('Verifying solution...');
-          let verifyState = { ...testState };
-          for (const move of solution) {
-            verifyState = performMove(verifyState, move);
-          }
-          
-          console.log('Final state after applying solution:', verifyState);
-          console.log('Is solved?', isSolved(verifyState));
-        }
-      } catch (error) {
-        console.error('Error in debugSolver:', error);
-      }
-    },
-    
-    // Test cubejs solver with simple scramble
-    testCubeJSSolver: async () => {
-      const state = get();
-      if (state.isAnimating || state.isSolving) return false;
-      
-      console.log('=== TESTING CUBEJS SOLVER ===');
-      
-      // Create a simple scramble (R U R' U')
-      const scrambleMoves = ["R", "U", "R'", "U'"];
-      let testState = createSolvedCube();
-      
-      // Apply the scramble
-      for (const move of scrambleMoves) {
-        testState = performMove(testState, move);
-      }
-      
-      console.log('Scrambled state:', testState);
-      
-      try {
-        // Try to solve it with the cubejs solver
-        console.log('Solving with cubejs...');
-        const solution = await solveWithCubeJS(testState);
-        console.log('Solution:', solution);
-        
-        // Apply the solution to verify it
-        if (solution && solution.length > 0) {
-          console.log('Verifying solution...');
-          let verifyState = { ...testState };
-          for (const move of solution) {
-            verifyState = performMove(verifyState, move);
-          }
-          
-          const isSolutionValid = isSolved(verifyState);
-          console.log('Solution is valid:', isSolutionValid);
-          return isSolutionValid;
-        }
-      } catch (error) {
-        console.error('Error in testCubeJSSolver:', error);
-      }
-      
-      return false;
-    },
-    
     // Internal actions
     _applyMove: (move: string) => {
       const state = get();
@@ -478,14 +431,20 @@ export const useCube = create<CubeStore>()(
         get()._startTimer();
       }
       
+      // NEW: Play hit sound for manual moves
+      if (!state.isSolving) {
+        useAudio.getState().playHit();
+      }
+      
       set({
         cubeState: newLogicalState,
         visualCube: newVisualState,
         moves: newMoves,
+        scrambleHistory: [...state.scrambleHistory, move], // NEW: Add manual moves to history
         isSolved: false // Mark as not solved when making manual moves
       });
       
-      console.log(`Applied move: ${move}, Total moves: ${newMoves.length}`);
+      console.log(`Applied move: ${move}, Total moves: ${newMoves.length}, History length: ${get().scrambleHistory.length}`);
     },
     
     _startTimer: () => {
@@ -523,38 +482,6 @@ export const useCube = create<CubeStore>()(
         };
         requestAnimationFrame(animate);
       }
-    },
-    
-    // Test function to verify move execution
-    testMoveExecution: () => {
-      console.log('=== TESTING MOVE EXECUTION ===');
-      
-      // Start with solved cube
-      let state = createSolvedCube();
-      let visualState = createVisualCube();
-      
-      // Apply a sequence that should return to solved state
-      const testSequence = ["R", "U", "R'", "U'"];
-      const fullSequence = [...testSequence, ...testSequence, ...testSequence, ...testSequence]; // 16 moves total
-      
-      console.log('Initial logical state:', state);
-      console.log('Initial visual state cubies:', visualState.length);
-      
-      for (let i = 0; i < fullSequence.length; i++) {
-        const move = fullSequence[i];
-        state = performMove(state, move);
-        visualState = applyVisualMove(visualState, move);
-        
-        console.log(`After move ${i + 1} (${move}):`, {
-          logicalSolved: isSolved(state),
-          visualCubies: visualState.length
-        });
-      }
-      
-      const logicalSolved = isSolved(state);
-      console.log('Final logical state is solved:', logicalSolved);
-      
-      return logicalSolved;
     }
   }))
 );

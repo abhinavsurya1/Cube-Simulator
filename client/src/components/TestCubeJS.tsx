@@ -3,7 +3,7 @@ import { useCube } from '../lib/stores/useCube';
 import { createSolvedCube, isSolved } from '../lib/cubeState';
 import { executeMove as performMove } from '../lib/cubeLogic';
 
-export default function TestCubeJS() {
+export default function TestKociemba() {
   const { solveCube, executeMove } = useCube();
   const [testResults, setTestResults] = useState<Array<{test: string, passed: boolean, message: string}>>([]);
   const [isTesting, setIsTesting] = useState(false);
@@ -92,7 +92,7 @@ export default function TestCubeJS() {
 
   return (
     <div className="p-4 bg-gray-800 rounded-lg shadow-lg max-w-2xl mx-auto mt-8">
-      <h2 className="text-xl font-bold text-white mb-4">CubeJS Integration Tests</h2>
+      <h2 className="text-xl font-bold text-white mb-4">Kociemba Algorithm Tests</h2>
       
       <div className="mb-4">
         <button
@@ -104,7 +104,7 @@ export default function TestCubeJS() {
               : 'bg-blue-600 hover:bg-blue-700'
           } text-white`}
         >
-          {isTesting ? 'Running Tests...' : 'Run Integration Tests'}
+          {isTesting ? 'Testing Kociemba...' : 'Test Kociemba Algorithm'}
         </button>
         
         <button

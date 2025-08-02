@@ -21,11 +21,20 @@ export const useAudio = create<AudioState>((set, get) => ({
   backgroundMusic: null,
   hitSound: null,
   successSound: null,
-  isMuted: true, // Start muted by default
+  isMuted: false, // Start unmuted by default
   
-  setBackgroundMusic: (music) => set({ backgroundMusic: music }),
-  setHitSound: (sound) => set({ hitSound: sound }),
-  setSuccessSound: (sound) => set({ successSound: sound }),
+  setBackgroundMusic: (music) => {
+    console.log('Setting background music');
+    set({ backgroundMusic: music });
+  },
+  setHitSound: (sound) => {
+    console.log('Setting hit sound');
+    set({ hitSound: sound });
+  },
+  setSuccessSound: (sound) => {
+    console.log('Setting success sound');
+    set({ successSound: sound });
+  },
   
   toggleMute: () => {
     const { isMuted } = get();
@@ -40,6 +49,8 @@ export const useAudio = create<AudioState>((set, get) => ({
   
   playHit: () => {
     const { hitSound, isMuted } = get();
+    console.log('playHit called', { hitSound: !!hitSound, isMuted });
+    
     if (hitSound) {
       // If sound is muted, don't play anything
       if (isMuted) {
@@ -53,11 +64,16 @@ export const useAudio = create<AudioState>((set, get) => ({
       soundClone.play().catch(error => {
         console.log("Hit sound play prevented:", error);
       });
+      console.log("Hit sound played successfully");
+    } else {
+      console.log("Hit sound not available");
     }
   },
   
   playSuccess: () => {
     const { successSound, isMuted } = get();
+    console.log('playSuccess called', { successSound: !!successSound, isMuted });
+    
     if (successSound) {
       // If sound is muted, don't play anything
       if (isMuted) {
@@ -69,6 +85,9 @@ export const useAudio = create<AudioState>((set, get) => ({
       successSound.play().catch(error => {
         console.log("Success sound play prevented:", error);
       });
+      console.log("Success sound played successfully");
+    } else {
+      console.log("Success sound not available");
     }
   }
 }));
