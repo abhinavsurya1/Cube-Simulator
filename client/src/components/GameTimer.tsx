@@ -4,7 +4,7 @@ import { Card, CardContent } from './ui/card';
 import { Clock } from 'lucide-react';
 
 export default function GameTimer() {
-  const { isTimerRunning, timerStartTime, moves } = useCube();
+  const { isTimerRunning, timerStartTime, moves, isSolving, isSolved } = useCube();
   const [elapsedTime, setElapsedTime] = useState(0);
 
   useEffect(() => {
@@ -33,6 +33,22 @@ export default function GameTimer() {
     return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}.${centiseconds.toString().padStart(2, '0')}`;
   };
 
+  const getStatusText = () => {
+    if (isSolved) return 'Solved!';
+    if (isSolving) return 'Solving...';
+    if (isTimerRunning) return 'Running';
+    if (timerStartTime) return 'Paused';
+    return 'Stopped';
+  };
+
+  const getStatusColor = () => {
+    if (isSolved) return 'text-green-400';
+    if (isSolving) return 'text-blue-400';
+    if (isTimerRunning) return 'text-green-400';
+    if (timerStartTime) return 'text-yellow-400';
+    return 'text-gray-400';
+  };
+
   return (
     <Card className="bg-black/80 border-gray-600">
       <CardContent className="p-3">
@@ -42,8 +58,8 @@ export default function GameTimer() {
             {formatTime(elapsedTime)}
           </div>
         </div>
-        <div className="text-xs text-gray-400 mt-1">
-          {isTimerRunning ? 'Running' : timerStartTime ? 'Paused' : 'Stopped'}
+        <div className={`text-xs mt-1 ${getStatusColor()}`}>
+          {getStatusText()}
         </div>
       </CardContent>
     </Card>

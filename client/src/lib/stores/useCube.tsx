@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { subscribeWithSelector } from 'zustand/middleware';
-import { CubeState, createSolvedCube, isSolved } from '../cubeState';
+import { CubeState, createSolvedCube, createSolved2x2Cube, isSolved } from '../cubeState';
 import { executeMove as performMove, scramble, isValidMove } from '../cubeLogic';
 import { CubieState, createVisualCube, applyVisualMove } from '../cubeVisual';
 import { useAudio } from './useAudio';
@@ -15,6 +15,9 @@ interface CubeStore {
   
   // NEW: Scramble history tracking
   scrambleHistory: string[];
+  
+  // NEW: Cube size
+  cubeSize: 2 | 3;
   
   // Animation state
   isAnimating: boolean;
@@ -46,6 +49,10 @@ interface CubeStore {
   clearError: () => void;
   clearNotification: () => void;
   
+  // NEW: Cube size actions
+  switchTo2x2: () => void;
+  switchTo3x3: () => void;
+  
   // NEW: Reverse history solving
   solveWithHistory: () => void;
   
@@ -76,11 +83,12 @@ export const useCube = create<CubeStore>()(
   subscribeWithSelector((set, get) => ({
     // Initial state
     cubeState: createSolvedCube(),
-    visualCube: createVisualCube(),
+    visualCube: createVisualCube(3),
     moves: [],
     solutionMoves: [],
     currentMoveIndex: 0,
     scrambleHistory: [], // NEW: Track all moves made
+    cubeSize: 3, // NEW: Default to 3x3
     isAnimating: false,
     animationProgress: 0,
     currentMove: null,
@@ -94,9 +102,53 @@ export const useCube = create<CubeStore>()(
     timerStartTime: null,
     notification: null, // NEW: Initialize notification
     
+    // NEW: Switch to 2x2 cube
+    switchTo2x2: () => {
+      set({
+        cubeState: createSolved2x2Cube(),
+        visualCube: createVisualCube(2), // Create 2x2 visual cube
+        moves: [],
+        solutionMoves: [],
+        currentMoveIndex: 0,
+        scrambleHistory: [],
+        cubeSize: 2,
+        isSolved: true,
+        isTimerRunning: false,
+        timerStartTime: null,
+        notification: 'Switched to 2x2 cube!'
+      });
+      
+      // Clear notification after 3 seconds
+      setTimeout(() => {
+        get().clearNotification();
+      }, 3000);
+    },
+    
+    // NEW: Switch to 3x3 cube
+    switchTo3x3: () => {
+      set({
+        cubeState: createSolvedCube(),
+        visualCube: createVisualCube(3), // Create 3x3 visual cube
+        moves: [],
+        solutionMoves: [],
+        currentMoveIndex: 0,
+        scrambleHistory: [],
+        cubeSize: 3,
+        isSolved: true,
+        isTimerRunning: false,
+        timerStartTime: null,
+        notification: 'Switched to 3x3 cube!'
+      });
+      
+      // Clear notification after 3 seconds
+      setTimeout(() => {
+        get().clearNotification();
+      }, 3000);
+    },
+    
     executeMove: (move: string) => {
       const state = get();
-      if (state.isAnimating || !isValidMove(move)) return;
+      if (state.isAnimating || !isValidMove(move, state.cubeSize)) return;
       
       // Start timer on first move if not already running
       if (!state.isTimerRunning && state.moves.length === 0) {
@@ -116,8 +168,8 @@ export const useCube = create<CubeStore>()(
       const state = get();
       if (state.isAnimating || state.isSolving) return;
       
-      console.log('Scrambling cube...');
-      const scrambleMoves = scramble(20); // Generate 20 random moves
+      console.log(`Scrambling ${state.cubeSize}x${state.cubeSize} cube...`);
+      const scrambleMoves = scramble(20, state.cubeSize); // Generate 20 random moves
       
       // Set scrambling state
       set({
@@ -129,10 +181,10 @@ export const useCube = create<CubeStore>()(
       // Play scramble start sound
       useAudio.getState().playHit();
       
-      // Animate the scramble with delays
-      const animateScramble = async () => {
-        let newState = createSolvedCube();
-        let newVisualCube = createVisualCube();
+              // Animate the scramble with delays
+        const animateScramble = async () => {
+          let newState = state.cubeSize === 2 ? createSolved2x2Cube() : createSolvedCube();
+          let newVisualCube = createVisualCube(state.cubeSize);
         
         for (let i = 0; i < scrambleMoves.length; i++) {
           const move = scrambleMoves[i];
@@ -178,7 +230,7 @@ export const useCube = create<CubeStore>()(
         useAudio.getState().playSuccess();
         
         // Show completion notification
-        set({ notification: 'Cube scrambled successfully!' });
+        set({ notification: `${state.cubeSize}x${state.cubeSize} cube scrambled successfully!` });
         
         // Clear notification after 3 seconds
         setTimeout(() => {
@@ -198,8 +250,16 @@ export const useCube = create<CubeStore>()(
         return;
       }
 
-      console.log('=== STARTING KOCIEMBA TWO-PHASE SOLVE ===');
+      console.log(`=== STARTING KOCIEMBA TWO-PHASE SOLVE FOR ${state.cubeSize}X${state.cubeSize} ===`);
       console.log('Current scramble history:', state.scrambleHistory);
+      
+      // NEW: Start timer when solving begins
+      if (!state.isTimerRunning) {
+        get()._startTimer();
+      }
+      
+      // NEW: Play solve start sound
+      useAudio.getState().playHit();
       
       // Set initial solving state
       set({
@@ -291,6 +351,14 @@ export const useCube = create<CubeStore>()(
             if (solved) {
               get()._stopTimer();
               useAudio.getState().playSuccess();
+              
+                          // Show completion notification
+            set({ notification: `${state.cubeSize}x${state.cubeSize} cube solved successfully!` });
+              
+              // Clear notification after 3 seconds
+              setTimeout(() => {
+                get().clearNotification();
+              }, 3000);
             }
             
             // Clear the history after successful solve
@@ -376,9 +444,12 @@ export const useCube = create<CubeStore>()(
     },
     
     resetCube: () => {
+      const state = get();
+      const createSolvedState = state.cubeSize === 2 ? createSolved2x2Cube : createSolvedCube;
+      
       set({
-        cubeState: createSolvedCube(),
-        visualCube: createVisualCube(),
+        cubeState: createSolvedState(),
+        visualCube: createVisualCube(state.cubeSize),
         moves: [],
         solutionMoves: [],
         currentMoveIndex: 0,

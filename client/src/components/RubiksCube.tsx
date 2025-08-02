@@ -48,7 +48,8 @@ export default function RubiksCube() {
     animationProgress,
     currentMove,
     isSolving,
-    solutionMoves
+    solutionMoves,
+    cubeSize
   } = useCube();
   
   // This will help force re-renders when the visual cube changes
@@ -131,12 +132,15 @@ export default function RubiksCube() {
 
   // Generate cubies based on visual cube state
   const generateCubies = () => {
+    // Add a small gap for both 2x2 and 3x3 cubes to show black lines between cubies
+    const gap = CUBIE_GAP; // Use the same gap for both cube sizes
+    
     return visualCube.map((cubie, index) => {
       const [x, y, z] = cubie.position;
       const position: [number, number, number] = [
-        x * (CUBIE_SIZE + CUBIE_GAP),
-        y * (CUBIE_SIZE + CUBIE_GAP),
-        z * (CUBIE_SIZE + CUBIE_GAP)
+        x * (CUBIE_SIZE + gap),
+        y * (CUBIE_SIZE + gap),
+        z * (CUBIE_SIZE + gap)
       ];
       
       return (

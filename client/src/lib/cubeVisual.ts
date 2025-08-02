@@ -26,36 +26,76 @@ export const FACE_COLORS = {
 };
 
 // Create initial solved cube state
-export function createVisualCube(): CubieState[] {
+export function createVisualCube(cubeSize: 2 | 3 = 3): CubieState[] {
   const cubies: CubieState[] = [];
   
-  for (let x = -1; x <= 1; x++) {
-    for (let y = -1; y <= 1; y++) {
-      for (let z = -1; z <= 1; z++) {
-        // Skip center cubie
-        if (x === 0 && y === 0 && z === 0) continue;
-        
-        const position: [number, number, number] = [x, y, z];
-        
-        // Initialize all face colors - use undefined for interior faces
-        const faceColors: any = {
-          right: undefined,
-          left: undefined,
-          top: undefined,
-          bottom: undefined,
-          front: undefined,
-          back: undefined
-        };
-        
-        // Assign colors only to visible faces based on position
-        if (x === 1) faceColors.right = FACE_COLORS.R;   // Right face
-        if (x === -1) faceColors.left = FACE_COLORS.L;   // Left face
-        if (y === 1) faceColors.top = FACE_COLORS.U;     // Top face
-        if (y === -1) faceColors.bottom = FACE_COLORS.D; // Bottom face
-        if (z === 1) faceColors.front = FACE_COLORS.F;   // Front face
-        if (z === -1) faceColors.back = FACE_COLORS.B;   // Back face
-        
-        cubies.push({ position, faceColors });
+  if (cubeSize === 2) {
+    // 2x2 cube: only corner pieces (8 cubies)
+    // Use coordinates that will form a solid block when rendered with no gap
+    const positions: [number, number, number][] = [
+      [0.5, 0.5, 0.5],   // top-front-right
+      [-0.5, 0.5, 0.5],  // top-front-left
+      [-0.5, 0.5, -0.5], // top-back-left
+      [0.5, 0.5, -0.5],  // top-back-right
+      [0.5, -0.5, 0.5],  // bottom-front-right
+      [-0.5, -0.5, 0.5], // bottom-front-left
+      [-0.5, -0.5, -0.5],// bottom-back-left
+      [0.5, -0.5, -0.5]  // bottom-back-right
+    ];
+    
+    for (const position of positions) {
+      const [x, y, z] = position;
+      
+      // Initialize all face colors - use undefined for interior faces
+      const faceColors: any = {
+        right: undefined,
+        left: undefined,
+        top: undefined,
+        bottom: undefined,
+        front: undefined,
+        back: undefined
+      };
+      
+      // Assign colors only to visible faces based on position
+      if (x === 0.5) faceColors.right = FACE_COLORS.R;   // Right face
+      if (x === -0.5) faceColors.left = FACE_COLORS.L;   // Left face
+      if (y === 0.5) faceColors.top = FACE_COLORS.U;     // Top face
+      if (y === -0.5) faceColors.bottom = FACE_COLORS.D; // Bottom face
+      if (z === 0.5) faceColors.front = FACE_COLORS.F;   // Front face
+      if (z === -0.5) faceColors.back = FACE_COLORS.B;   // Back face
+      
+      cubies.push({ position, faceColors });
+    }
+  } else {
+    // 3x3 cube: all pieces (26 cubies)
+    for (let x = -1; x <= 1; x++) {
+      for (let y = -1; y <= 1; y++) {
+        for (let z = -1; z <= 1; z++) {
+          // Skip center cubie
+          if (x === 0 && y === 0 && z === 0) continue;
+          
+          const position: [number, number, number] = [x, y, z];
+          
+          // Initialize all face colors - use undefined for interior faces
+          const faceColors: any = {
+            right: undefined,
+            left: undefined,
+            top: undefined,
+            bottom: undefined,
+            front: undefined,
+            back: undefined
+          };
+          
+          // Assign colors only to visible faces based on position
+          if (x === 1) faceColors.right = FACE_COLORS.R;   // Right face
+          if (x === -1) faceColors.left = FACE_COLORS.L;   // Left face
+          if (y === 1) faceColors.top = FACE_COLORS.U;     // Top face
+          if (y === -1) faceColors.bottom = FACE_COLORS.D; // Bottom face
+          if (z === 1) faceColors.front = FACE_COLORS.F;   // Front face
+          if (z === -1) faceColors.back = FACE_COLORS.B;   // Back face
+          
+          cubies.push({ position, faceColors });
+        }
       }
     }
   }
@@ -75,56 +115,64 @@ export function applyVisualMove(cubies: CubieState[], move: string): CubieState[
   
   console.log(`[DEBUG] Copied cubies:`, JSON.stringify(newCubies, null, 2).substring(0, 200) + '...');
   
+  // Determine cube size based on the coordinates used
+  const is2x2 = cubies.some(cubie => 
+    Math.abs(cubie.position[0]) === 0.5 || 
+    Math.abs(cubie.position[1]) === 0.5 || 
+    Math.abs(cubie.position[2]) === 0.5
+  );
+  
   switch (move) {
     case 'U':
-      return rotateU(newCubies, 1);
+      return rotateU(newCubies, 1, is2x2);
     case "U'":
-      return rotateU(newCubies, -1);
+      return rotateU(newCubies, -1, is2x2);
     case 'U2':
-      return rotateU(rotateU(newCubies, 1), 1);
+      return rotateU(rotateU(newCubies, 1, is2x2), 1, is2x2);
     case 'D':
-      return rotateD(newCubies, 1);
+      return rotateD(newCubies, 1, is2x2);
     case "D'":
-      return rotateD(newCubies, -1);
+      return rotateD(newCubies, -1, is2x2);
     case 'D2':
-      return rotateD(rotateD(newCubies, 1), 1);
+      return rotateD(rotateD(newCubies, 1, is2x2), 1, is2x2);
     case 'R':
-      return rotateR(newCubies, 1);
+      return rotateR(newCubies, 1, is2x2);
     case "R'":
-      return rotateR(newCubies, -1);
+      return rotateR(newCubies, -1, is2x2);
     case 'R2':
-      return rotateR(rotateR(newCubies, 1), 1);
+      return rotateR(rotateR(newCubies, 1, is2x2), 1, is2x2);
     case 'L':
-      return rotateL(newCubies, 1);
+      return rotateL(newCubies, 1, is2x2);
     case "L'":
-      return rotateL(newCubies, -1);
+      return rotateL(newCubies, -1, is2x2);
     case 'L2':
-      return rotateL(rotateL(newCubies, 1), 1);
+      return rotateL(rotateL(newCubies, 1, is2x2), 1, is2x2);
     case 'F':
-      return rotateF(newCubies, 1);
+      return rotateF(newCubies, 1, is2x2);
     case "F'":
-      return rotateF(newCubies, -1);
+      return rotateF(newCubies, -1, is2x2);
     case 'F2':
-      return rotateF(rotateF(newCubies, 1), 1);
+      return rotateF(rotateF(newCubies, 1, is2x2), 1, is2x2);
     case 'B':
-      return rotateB(newCubies, 1);
+      return rotateB(newCubies, 1, is2x2);
     case "B'":
-      return rotateB(newCubies, -1);
+      return rotateB(newCubies, -1, is2x2);
     case 'B2':
-      return rotateB(rotateB(newCubies, 1), 1);
+      return rotateB(rotateB(newCubies, 1, is2x2), 1, is2x2);
     default:
       console.warn(`Unknown move: ${move}`);
       return newCubies;
   }
 }
 
-// Rotate U face (y = 1)
-function rotateU(cubies: CubieState[], direction: number): CubieState[] {
+// Rotate U face (y = 1 or 0.5)
+function rotateU(cubies: CubieState[], direction: number, is2x2: boolean): CubieState[] {
   const upperFaceCubies: CubieState[] = [];
   const otherCubies: CubieState[] = [];
+  const upperY = is2x2 ? 0.5 : 1;
   
   cubies.forEach(cubie => {
-    if (cubie.position[1] === 1) {
+    if (cubie.position[1] === upperY) {
       upperFaceCubies.push(cubie);
     } else {
       otherCubies.push(cubie);
@@ -167,13 +215,14 @@ function rotateU(cubies: CubieState[], direction: number): CubieState[] {
   return [...otherCubies, ...rotatedUpperCubies];
 }
 
-// Rotate D face (y = -1)
-function rotateD(cubies: CubieState[], direction: number): CubieState[] {
+// Rotate D face (y = -1 or -0.5)
+function rotateD(cubies: CubieState[], direction: number, is2x2: boolean): CubieState[] {
   const lowerFaceCubies: CubieState[] = [];
   const otherCubies: CubieState[] = [];
+  const lowerY = is2x2 ? -0.5 : -1;
   
   cubies.forEach(cubie => {
-    if (cubie.position[1] === -1) {
+    if (cubie.position[1] === lowerY) {
       lowerFaceCubies.push(cubie);
     } else {
       otherCubies.push(cubie);
@@ -216,13 +265,14 @@ function rotateD(cubies: CubieState[], direction: number): CubieState[] {
   return [...otherCubies, ...rotatedLowerCubies];
 }
 
-// Rotate R face (x = 1)
-function rotateR(cubies: CubieState[], direction: number): CubieState[] {
+// Rotate R face (x = 1 or 0.5)
+function rotateR(cubies: CubieState[], direction: number, is2x2: boolean): CubieState[] {
   const rightFaceCubies: CubieState[] = [];
   const otherCubies: CubieState[] = [];
+  const rightX = is2x2 ? 0.5 : 1;
   
   cubies.forEach(cubie => {
-    if (cubie.position[0] === 1) {
+    if (cubie.position[0] === rightX) {
       rightFaceCubies.push(cubie);
     } else {
       otherCubies.push(cubie);
@@ -263,13 +313,14 @@ function rotateR(cubies: CubieState[], direction: number): CubieState[] {
   return [...otherCubies, ...rotatedRightCubies];
 }
 
-// Rotate L face (x = -1)
-function rotateL(cubies: CubieState[], direction: number): CubieState[] {
+// Rotate L face (x = -1 or -0.5)
+function rotateL(cubies: CubieState[], direction: number, is2x2: boolean): CubieState[] {
   const leftFaceCubies: CubieState[] = [];
   const otherCubies: CubieState[] = [];
+  const leftX = is2x2 ? -0.5 : -1;
   
   cubies.forEach(cubie => {
-    if (cubie.position[0] === -1) {
+    if (cubie.position[0] === leftX) {
       leftFaceCubies.push(cubie);
     } else {
       otherCubies.push(cubie);
@@ -310,13 +361,14 @@ function rotateL(cubies: CubieState[], direction: number): CubieState[] {
   return [...otherCubies, ...rotatedLeftCubies];
 }
 
-// Rotate F face (z = 1)
-function rotateF(cubies: CubieState[], direction: number): CubieState[] {
+// Rotate F face (z = 1 or 0.5)
+function rotateF(cubies: CubieState[], direction: number, is2x2: boolean): CubieState[] {
   const frontFaceCubies: CubieState[] = [];
   const otherCubies: CubieState[] = [];
+  const frontZ = is2x2 ? 0.5 : 1;
   
   cubies.forEach(cubie => {
-    if (cubie.position[2] === 1) {
+    if (cubie.position[2] === frontZ) {
       frontFaceCubies.push(cubie);
     } else {
       otherCubies.push(cubie);
@@ -357,13 +409,14 @@ function rotateF(cubies: CubieState[], direction: number): CubieState[] {
   return [...otherCubies, ...rotatedFrontCubies];
 }
 
-// Rotate B face (z = -1)
-function rotateB(cubies: CubieState[], direction: number): CubieState[] {
+// Rotate B face (z = -1 or -0.5)
+function rotateB(cubies: CubieState[], direction: number, is2x2: boolean): CubieState[] {
   const backFaceCubies: CubieState[] = [];
   const otherCubies: CubieState[] = [];
+  const backZ = is2x2 ? -0.5 : -1;
   
   cubies.forEach(cubie => {
-    if (cubie.position[2] === -1) {
+    if (cubie.position[2] === backZ) {
       backFaceCubies.push(cubie);
     } else {
       otherCubies.push(cubie);
@@ -407,7 +460,7 @@ function rotateB(cubies: CubieState[], direction: number): CubieState[] {
 // Convert logical cube state to visual cube state
 export function logicalToVisualCube(logicalState: CubeState): CubieState[] {
   // Start with a solved visual cube
-  const visualCube = createVisualCube();
+  const visualCube = createVisualCube(logicalState.size);
   
   // Apply the logical state changes to the visual cube
   // This is a simplified approach - in a full implementation, you'd need to map

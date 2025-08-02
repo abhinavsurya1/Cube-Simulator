@@ -134,6 +134,129 @@ export const MOVE_DEFINITIONS: { [key: string]: MoveDefinition } = {
   }
 };
 
+// NEW: 2x2 Move definitions (only corners, no edges)
+export const MOVE_DEFINITIONS_2X2: { [key: string]: MoveDefinition } = {
+  // U face moves (Upper) - No orientation changes for U moves
+  'U': {
+    cornerCycle: [0, 1, 2, 3],
+    cornerOrientationChange: [],
+    edgeCycle: [],
+    edgeOrientationChange: []
+  },
+  "U'": {
+    cornerCycle: [3, 2, 1, 0],
+    cornerOrientationChange: [],
+    edgeCycle: [],
+    edgeOrientationChange: []
+  },
+  'U2': {
+    cornerCycle: [0, 2, 1, 3],
+    cornerOrientationChange: [],
+    edgeCycle: [],
+    edgeOrientationChange: []
+  },
+  
+  // R face moves (Right) - Corners change orientation when moved
+  'R': {
+    cornerCycle: [0, 4, 7, 3],
+    cornerOrientationChange: [1, 2, 1, 2],
+    edgeCycle: [],
+    edgeOrientationChange: []
+  },
+  "R'": {
+    cornerCycle: [3, 7, 4, 0],
+    cornerOrientationChange: [2, 1, 2, 1],
+    edgeCycle: [],
+    edgeOrientationChange: []
+  },
+  'R2': {
+    cornerCycle: [0, 7, 4, 3],
+    cornerOrientationChange: [],
+    edgeCycle: [],
+    edgeOrientationChange: []
+  },
+  
+  // F face moves (Front) - Corners change orientation
+  'F': {
+    cornerCycle: [3, 7, 6, 2],
+    cornerOrientationChange: [1, 2, 1, 2],
+    edgeCycle: [],
+    edgeOrientationChange: []
+  },
+  "F'": {
+    cornerCycle: [2, 6, 7, 3],
+    cornerOrientationChange: [1, 2, 1, 2],
+    edgeCycle: [],
+    edgeOrientationChange: []
+  },
+  'F2': {
+    cornerCycle: [3, 6, 7, 2],
+    cornerOrientationChange: [],
+    edgeCycle: [],
+    edgeOrientationChange: []
+  },
+  
+  // L face moves (Left) - Corners change orientation when moved
+  'L': {
+    cornerCycle: [1, 2, 6, 5],
+    cornerOrientationChange: [1, 2, 1, 2],
+    edgeCycle: [],
+    edgeOrientationChange: []
+  },
+  "L'": {
+    cornerCycle: [5, 6, 2, 1],
+    cornerOrientationChange: [2, 1, 2, 1],
+    edgeCycle: [],
+    edgeOrientationChange: []
+  },
+  'L2': {
+    cornerCycle: [1, 6, 2, 5],
+    cornerOrientationChange: [],
+    edgeCycle: [],
+    edgeOrientationChange: []
+  },
+  
+  // D face moves (Down) - No orientation changes for D moves
+  'D': {
+    cornerCycle: [4, 5, 6, 7],
+    cornerOrientationChange: [],
+    edgeCycle: [],
+    edgeOrientationChange: []
+  },
+  "D'": {
+    cornerCycle: [7, 6, 5, 4],
+    cornerOrientationChange: [],
+    edgeCycle: [],
+    edgeOrientationChange: []
+  },
+  'D2': {
+    cornerCycle: [4, 6, 5, 7],
+    cornerOrientationChange: [],
+    edgeCycle: [],
+    edgeOrientationChange: []
+  },
+  
+  // B face moves (Back) - Corners change orientation
+  'B': {
+    cornerCycle: [0, 1, 5, 4],
+    cornerOrientationChange: [1, 2, 1, 2],
+    edgeCycle: [],
+    edgeOrientationChange: []
+  },
+  "B'": {
+    cornerCycle: [4, 5, 1, 0],
+    cornerOrientationChange: [1, 2, 1, 2],
+    edgeCycle: [],
+    edgeOrientationChange: []
+  },
+  'B2': {
+    cornerCycle: [0, 5, 1, 4],
+    cornerOrientationChange: [],
+    edgeCycle: [],
+    edgeOrientationChange: []
+  }
+};
+
 // Test function to verify move definitions
 export function testMoveDefinitions(): boolean {
   console.log('=== TESTING MOVE DEFINITIONS ===');

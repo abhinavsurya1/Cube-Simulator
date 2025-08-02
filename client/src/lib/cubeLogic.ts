@@ -1,9 +1,11 @@
-import { CubeState, createSolvedCube } from './cubeState';
-import { MOVE_DEFINITIONS } from './moves';
+import { CubeState, createSolvedCube, createSolved2x2Cube } from './cubeState';
+import { MOVE_DEFINITIONS, MOVE_DEFINITIONS_2X2 } from './moves';
 
 // Execute a move on the cube state
 export function executeMove(state: CubeState, move: string): CubeState {
-  const moveData = MOVE_DEFINITIONS[move];
+  // Choose move definitions based on cube size
+  const moveDefinitions = state.size === 2 ? MOVE_DEFINITIONS_2X2 : MOVE_DEFINITIONS;
+  const moveData = moveDefinitions[move];
   
   if (!moveData) {
     console.error(`Unknown move: ${move}`);
@@ -15,7 +17,8 @@ export function executeMove(state: CubeState, move: string): CubeState {
     cornerPositions: [...state.cornerPositions],
     cornerOrientations: [...state.cornerOrientations],
     edgePositions: [...state.edgePositions],
-    edgeOrientations: [...state.edgeOrientations]
+    edgeOrientations: [...state.edgeOrientations],
+    size: state.size
   };
 
   // Apply corner cycle - CORRECT WAY
@@ -41,8 +44,8 @@ export function executeMove(state: CubeState, move: string): CubeState {
     }
   }
   
-  // Apply edge cycle - CORRECT WAY
-  if (moveData.edgeCycle.length > 0) {
+  // Apply edge cycle - CORRECT WAY (only for 3x3)
+  if (moveData.edgeCycle.length > 0 && state.size === 3) {
     // Save the pieces that will be moved
     const tempPositions: number[] = [];
     const tempOrientations: number[] = [];
@@ -68,7 +71,7 @@ export function executeMove(state: CubeState, move: string): CubeState {
 }
 
 // Generate a random scramble
-export function scramble(length: number = 25): string[] {
+export function scramble(length: number = 25, cubeSize: 2 | 3 = 3): string[] {
   const moves = ['U', "U'", 'U2', 'R', "R'", 'R2', 'F', "F'", 'F2', 
                  'L', "L'", 'L2', 'D', "D'", 'D2', 'B', "B'", 'B2'];
   const scrambleMoves: string[] = [];
@@ -88,8 +91,9 @@ export function scramble(length: number = 25): string[] {
 }
 
 // Validate if a move is valid
-export function isValidMove(move: string): boolean {
-  return move in MOVE_DEFINITIONS;
+export function isValidMove(move: string, cubeSize: 2 | 3 = 3): boolean {
+  const moveDefinitions = cubeSize === 2 ? MOVE_DEFINITIONS_2X2 : MOVE_DEFINITIONS;
+  return move in moveDefinitions;
 }
 
 // Apply a sequence of moves

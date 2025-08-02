@@ -13,7 +13,8 @@ export default function SolverProgress() {
     isSolved,
     isAnimating,
     currentMove,
-    animationProgress
+    animationProgress,
+    cubeSize
   } = useCube();
 
   const getProgress = () => {
@@ -55,7 +56,7 @@ export default function SolverProgress() {
             <Brain className="w-4 h-4" />
           )}
           <div className="text-sm font-medium">
-            {isScrambling ? 'Scramble Progress' : 'Kociemba Solver'}
+            {isScrambling ? 'Scramble Progress' : `${cubeSize}x${cubeSize} Kociemba Solver`}
           </div>
         </div>
         
