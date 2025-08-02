@@ -147,7 +147,8 @@ export function convertFromCubeJS(cubejsState: any): CubeState {
     cornerPositions: [...cubejsState.cp],
     cornerOrientations: [...cubejsState.co],
     edgePositions: [...cubejsState.ep],
-    edgeOrientations: [...cubejsState.eo]
+    edgeOrientations: [...cubejsState.eo],
+    size: 3 // Default to 3x3 for CubeJS compatibility
   };
 }
 
@@ -349,7 +350,8 @@ export function testCubeJSLoading(): boolean {
       cornerPositions: [0, 1, 2, 3, 4, 5, 6, 7],
       cornerOrientations: [0, 0, 0, 0, 0, 0, 0, 0],
       edgePositions: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11],
-      edgeOrientations: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+      edgeOrientations: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+      size: 3 as const
     };
     
     const convertedState = convertToCubeJS(testState);
