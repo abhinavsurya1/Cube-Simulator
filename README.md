@@ -1,6 +1,6 @@
 # 🎯 Rubik's Cube Simulator
 
-**Live Demo:** [https://cube-simulator.vercel.app](https://cube-simulator.vercel.app)
+**Live Demo:** [https://cube-simulator.vercel.app](https://cube-simulator-chi.vercel.app)
 
 A sophisticated 3D Rubik's Cube simulator built with React, TypeScript, and Three.js. Features interactive solving, real-time visualization, and advanced algorithmic capabilities.
 
